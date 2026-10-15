@@ -1,0 +1,10 @@
+{"input": "What is 2+2?", "output": "The answer is 4.", "gts": "4", "score": 1.0, "step": 1, "uid": "group_a_step1", "data_source": "math"}
+{"input": "What is 2+2?", "output": "The answer is 5.", "gts": "4", "score": -1.0, "step": 1, "uid": "group_a_step1", "data_source": "math"}
+{"input": "What is 2+2?", "output": "The answer is 4.", "gts": "4", "score": 1.0, "step": 1, "uid": "group_a_step1", "data_source": "math"}
+{"input": "What is 2+2?", "output": "I don't know.", "gts": "4", "score": -1.0, "step": 1, "uid": "group_a_step1", "data_source": "math"}
+{"input": "What is 2+2?", "output": "The answer is 4.", "gts": "4", "score": 1.0, "step": 1, "uid": "group_a_step1", "data_source": "math"}
+{"input": "What is 5+5?", "output": "Answer: 10.", "gts": "10", "score": 1.0, "step": 1, "uid": "group_b_step1", "data_source": "math"}
+{"input": "What is 5+5?", "output": "Answer: 10.", "gts": "10", "score": 1.0, "step": 1, "uid": "group_b_step1", "data_source": "math"}
+{"input": "What is 5+5?", "output": "Answer: 10.", "gts": "10", "score": 1.0, "step": 1, "uid": "group_b_step1", "data_source": "math"}
+{"input": "What is 5+5?", "output": "Answer: 10.", "gts": "10", "score": 1.0, "step": 1, "uid": "group_b_step1", "data_source": "math"}
+{"input": "What is 5+5?", "output": "Answer: 10.", "gts": "10", "score": 1.0, "step": 1, "uid": "group_b_step1", "data_source": "math"}

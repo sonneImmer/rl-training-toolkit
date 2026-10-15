@@ -1,0 +1,4 @@
+{"input": "Q1", "output": "A1", "gts": "1", "score": 1.0, "step": 4, "uid": "g4_1"}
+{"input": "Q2", "output": "A2", "gts": "2", "score": -1.0, "step": 4, "uid": "g4_2"}
+{"input": "broken", "output": "brok
+{"input": "Q3", "response": ["a", "b", "c"], "reward": [1.0, -1.0], "step": 4, "uid": "g4_3"}

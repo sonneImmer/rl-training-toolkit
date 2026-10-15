@@ -1,0 +1,9 @@
+{"input": "Calculate 1/2.", "output": "Result: 0.50", "gts": "0.5", "score": 0.5, "step": 2, "uid": "group_c_step2", "data_source": "math"}
+{"input": "Calculate 1/2.", "output": "Result: 0.51", "gts": "0.5", "score": 0.51, "step": 2, "uid": "group_c_step2", "data_source": "math"}
+{"input": "Calculate 1/2.", "output": "Result: 0.49", "gts": "0.5", "score": 0.49, "step": 2, "uid": "group_c_step2", "data_source": "math"}
+{"input": "Calculate 1/2.", "output": "Result: 0.50", "gts": "0.5", "score": 0.5, "step": 2, "uid": "group_c_step2", "data_source": "math"}
+{"input": "Calculate 1/2.", "output": "Result: 0.50", "gts": "0.5", "score": 0.5, "step": 2, "uid": "group_c_step2", "data_source": "math"}
+{"input": "Solve x^2=4.", "output": "x=2", "gts": "2", "score": 1.0, "step": 2, "uid": "group_d_step2"}
+{"input": "Solve x^2=4.", "output": "x=-2", "gts": "2", "score": 1.0, "step": 2, "uid": "group_d_step2"}
+{"input": "Solve x^2=4.", "output": "x=3", "gts": "2", "step": 2, "uid": "group_d_step2"}
+{"input": "Solve x^2=4.", "output": "", "gts": "2", "score": NaN, "step": 2, "uid": "group_d_step2"}

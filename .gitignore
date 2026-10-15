@@ -1,0 +1,26 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Keep training data and generated outputs outside this repository.
+runs/
+outputs/
+checkpoints/
+diagnostics_output/
+eval_output/
+rule_eval_output/
+*.log
+*.jsonl
+*.parquet
+*.pt
+*.pth
+*.safetensors
+*.ckpt
+!tests/golden_data/**/*.jsonl
+.test-deps/

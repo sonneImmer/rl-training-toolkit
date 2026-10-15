@@ -1,0 +1,1 @@
+{"input": "What is 3+3?", "response": ["Answer: 6.", "Answer: 5.", "Answer: 6.", "Answer: 7.", "Answer: 6."], "reward": [1.0, -1.0, 1.0, -1.0, 1.0], "gts": "6", "step": 3, "uid": "group_e_step3", "data_source": "math"}
