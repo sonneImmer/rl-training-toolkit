@@ -1,0 +1,78 @@
+--- a/verl/trainer/ppo/core_algos.py
++++ b/verl/trainer/ppo/core_algos.py
+@@ -261,6 +261,51 @@
+ 
+ 
+ # NOTE(sgm): this implementation only consider outcome supervision, where the reward is a scalar.
++# zkx-ngrpo-runtime-patch-v1
++@register_adv_est("ngrpo")
++def compute_ngrpo_outcome_advantage(
++    token_level_rewards: torch.Tensor,
++    response_mask: torch.Tensor,
++    index: np.ndarray,
++    epsilon: float = 1e-6,
++    config: Optional[AlgoConfig] = None,
++    **kwargs,
++) -> tuple[torch.Tensor, torch.Tensor]:
++    """NGRPO outcome advantage using predecessor virtual max-reward samples."""
++    if config is None:
++        raise ValueError("NGRPO requires algorithm config")
++    max_reward = float(config.get("max_reward", 1.0))
++    add_max_reward_num = int(config.get("add_max_reward_num", 1))
++    if add_max_reward_num < 1:
++        raise ValueError("algorithm.add_max_reward_num must be >= 1")
++
++    scores = token_level_rewards.sum(dim=-1)
++    group_scores = defaultdict(list)
++    group_mean = {}
++    group_std = {}
++    with torch.no_grad():
++        for sample_index in range(scores.shape[0]):
++            group_scores[index[sample_index]].append(scores[sample_index])
++        for group_id, values in group_scores.items():
++            values_tensor = torch.stack(values)
++            virtual_scores = torch.full(
++                (add_max_reward_num,),
++                max_reward,
++                dtype=values_tensor.dtype,
++                device=values_tensor.device,
++            )
++            augmented = torch.cat((values_tensor, virtual_scores))
++            group_mean[group_id] = augmented.mean()
++            group_std[group_id] = augmented.std()
++        normalized = torch.stack([
++            (scores[sample_index] - group_mean[index[sample_index]])
++            / (group_std[index[sample_index]] + epsilon)
++            for sample_index in range(scores.shape[0])
++        ])
++        advantages = normalized.unsqueeze(-1) * response_mask
++    return advantages, advantages
++
++
+ @register_adv_est(AdvantageEstimator.GRPO)  # or simply: @register_adv_est("grpo")
+ def compute_grpo_outcome_advantage(
+     token_level_rewards: torch.Tensor,
+--- a/verl/trainer/config/algorithm.py
++++ b/verl/trainer/config/algorithm.py
+@@ -487,6 +487,8 @@
+     lam: float = 1.0
+     adv_estimator: str = "gae"
+     norm_adv_by_std_in_grpo: bool = True
++    max_reward: float = 1.0
++    add_max_reward_num: int = 1
+     use_kl_in_reward: bool = False
+     kl_penalty: str = "kl"
+     kl_ctrl: KLControlConfig = field(default_factory=KLControlConfig)
+--- a/verl/trainer/config/ppo_trainer.yaml
++++ b/verl/trainer/config/ppo_trainer.yaml
+@@ -83,6 +83,10 @@
+   # Whether to normalize advantages by std (specific to GRPO)
+   norm_adv_by_std_in_grpo: True
+ 
++  # NGRPO virtual max-reward settings
++  max_reward: 1.0
++  add_max_reward_num: 1
++
+   # Whether to enable in-reward KL penalty
+   use_kl_in_reward: False
+ 

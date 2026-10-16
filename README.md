@@ -24,6 +24,17 @@ pytest -q
 
 ## NGRPO 运行时补丁
 
+对于 `openpangu-72b-2512-postrain:v1`，推荐直接应用基于该镜像原始 VERL 文件生成的完整补丁：
+
+```bash
+patch --batch --forward --directory=/workspace/verl -p1 \
+  < patches/002-ngrpo-algorithm.patch
+```
+
+该补丁一次修改 NGRPO 算法实现、算法配置类和默认 YAML，不修改 `ray_trainer.py`、vLLM 或可视化代码。
+
+Python patcher仍可用于需要备份和恢复的环境：
+
 ```bash
 python3 patch_tools/patch_verl_ngrpo.py apply \
   --verl-root /workspace/verl \
