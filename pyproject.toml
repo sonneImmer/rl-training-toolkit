@@ -15,6 +15,10 @@ jupyter = ["ipython>=8", "jupyter>=1"]
 
 [project.scripts]
 rl-diagnostics = "rl_diagnostics.cli:main"
+rl-dashboard = "rl_diagnostics.dashboard:main"
+
+[tool.setuptools.package-data]
+rl_diagnostics = ["web/*.html", "web/*.css", "web/*.js"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

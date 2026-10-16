@@ -67,6 +67,19 @@ def _extract_str_field(record: dict[str, Any], keys: list[str], idx: int = 0) ->
     return None
 
 
+def _extract_bool_field(record: dict[str, Any], keys: list[str], idx: int = 0) -> Optional[bool]:
+    """Extract an explicit boolean without guessing from reward values."""
+    for key in keys:
+        if key not in record:
+            continue
+        val = record[key]
+        if isinstance(val, list):
+            val = val[idx] if idx < len(val) else None
+        if isinstance(val, bool):
+            return val
+    return None
+
+
 def _extract_step(record: dict[str, Any], filename_step: int) -> tuple[int, Optional[str]]:
     """Extract step from record, cross-check with filename."""
     rec_step = record.get("step", None)
@@ -126,6 +139,8 @@ def _parse_single_record(
     prompt = _extract_str_field(record, ["input", "prompt"])
     response = _extract_str_field(record, ["output", "response"])
     reward = _extract_reward(record)
+    prediction = _extract_str_field(record, ["pred", "prediction"])
+    verifier_correct = _extract_bool_field(record, ["acc", "correct", "is_correct"])
     ground_truth = _extract_str_field(record, ["gts", "ground_truth"])
     difficulty = _extract_str_field(record, ["difficulty"])
     source_dataset = _extract_str_field(record, ["data_source", "source_dataset"])
@@ -187,6 +202,8 @@ def _parse_single_record(
         response=response,
         training_reward=reward,
         reward_source="training",
+        prediction=prediction,
+        verifier_correct=verifier_correct,
         ground_truth=ground_truth,
         difficulty=difficulty,
         source_dataset=source_dataset,
@@ -330,6 +347,10 @@ def parse_rollout_dir(
                             source_line=line_idx,
                         )
                         arr_rollout.response = str(responses[arr_idx]) if arr_idx < len(responses) else None
+                        arr_rollout.prediction = _extract_str_field(record, ["pred", "prediction"], arr_idx)
+                        arr_rollout.verifier_correct = _extract_bool_field(
+                            record, ["acc", "correct", "is_correct"], arr_idx
+                        )
                         if arr_idx < len(rewards_list) and _is_finite_number(rewards_list[arr_idx]):
                             arr_rollout.training_reward = float(rewards_list[arr_idx])
                         else:

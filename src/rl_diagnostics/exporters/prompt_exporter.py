@@ -47,7 +47,11 @@ class ExportFilter:
 def _determine_suggested_usage(diag_type: str) -> list[str]:
     """Determine suggested usage based on diagnosis type."""
     usage = []
-    if diag_type in ("constant_score", "near_constant_score"):
+    if diag_type in (
+        "constant_score", "near_constant_score", "all_correct", "all_wrong",
+        "mostly_correct", "mostly_wrong", "all_positive", "all_non_positive",
+        "mostly_positive", "mostly_non_positive",
+    ):
         usage.extend(["manual_review", "resampling"])
     if diag_type in ("invalid_empty", "invalid_reward", "invalid_format", "invalid_truncated"):
         usage.extend(["data_cleaning", "manual_review"])
@@ -65,8 +69,17 @@ def _determine_diagnosis_type(
     quality_results: list[RolloutQualityResult],
 ) -> str:
     """Determine the primary diagnosis type for a group."""
-    # Priority: group signal type > quality issues
+    # Prefer explicit verifier evidence, then raw reward outcomes. These are
+    # observations only; they do not imply a cause or a difficulty label.
     if group_signal is not None:
+        if group_signal.correctness_type in (
+            "all_correct", "all_wrong", "mostly_correct", "mostly_wrong",
+        ):
+            return group_signal.correctness_type
+        if group_signal.reward_outcome_type in (
+            "all_positive", "all_non_positive", "mostly_positive", "mostly_non_positive",
+        ):
+            return group_signal.reward_outcome_type
         if group_signal.signal_type in ("constant_score", "near_constant_score",
                                           "insufficient_group", "group_unresolved"):
             return group_signal.signal_type
@@ -207,6 +220,10 @@ def export_prompts(
             "group_ids": [group.group_id],
             "responses": responses,
             "rewards": rewards,
+            "predictions": [r.prediction for r in group_rollouts],
+            "verifier_correct": [r.verifier_correct for r in group_rollouts],
+            "positive_reward_ratio": group_gs.positive_reward_ratio if group_gs else None,
+            "correctness_ratio": group_gs.correctness_ratio if group_gs else None,
             "diagnostic_type": diag_type,
             "diagnostic_reason": diag_reason,
             "rule_version": rule_version,

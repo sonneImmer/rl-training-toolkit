@@ -30,6 +30,7 @@ def cmd_analyze(args: argparse.Namespace) -> int:
         rel_epsilon=args.rel_epsilon,
         min_usable_rollouts=args.min_usable,
         min_effective_ratio=args.min_effective_ratio,
+        extreme_ratio_threshold=args.extreme_ratio_threshold,
     )
 
     export_filter = ExportFilter(
@@ -572,6 +573,8 @@ def main() -> int:
     p_analyze.add_argument("--rel-epsilon", type=float, default=1e-4, help="Relative reward tolerance")
     p_analyze.add_argument("--min-usable", type=int, default=2, help="Min usable rollouts per group")
     p_analyze.add_argument("--min-effective-ratio", type=float, default=0.3, help="Min informative pair ratio")
+    p_analyze.add_argument("--extreme-ratio-threshold", type=float, default=0.75,
+                           help="Export groups at or beyond this observed correct/reward ratio")
     p_analyze.add_argument("--filter-steps", help="Comma-separated step filter for export")
     p_analyze.add_argument("--filter-types", help="Comma-separated diagnosis type filter")
     p_analyze.add_argument("--filter-difficulties", help="Comma-separated difficulty filter")

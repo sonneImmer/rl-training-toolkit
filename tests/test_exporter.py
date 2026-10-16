@@ -85,6 +85,35 @@ class TestBasicExport:
         assert count == 1  # only g2
         os.unlink(path)
 
+    def test_exports_mostly_wrong_with_evidence(self):
+        groups = [_make_group("g1", 1, [-1.0, -1.0, -1.0, 1.0])]
+        rollouts = _make_rollouts("g1", 1, [-1.0, -1.0, -1.0, 1.0])
+        for rollout, correct in zip(rollouts, [False, False, False, True]):
+            rollout.verifier_correct = correct
+            rollout.prediction = "candidate"
+        quality = [RolloutQualityResult(
+            experiment_id="exp1", step=1, group_id="g1", rollout_id=i, status="usable"
+        ) for i in range(4)]
+        signals = [GroupSignalResult(
+            experiment_id="exp1", step=1, group_id="g1",
+            signal_type="effective_group", reason="mixed reward",
+            rollout_count=4, usable_count=4,
+            positive_reward_ratio=0.25,
+            reward_outcome_type="mostly_non_positive",
+            correctness_ratio=0.25,
+            correctness_type="mostly_wrong",
+        )]
+
+        path = "/tmp/test_export_mostly_wrong.jsonl"
+        count, _, _ = export_prompts(groups, rollouts, quality, signals, path)
+        assert count == 1
+        with open(path) as f:
+            entry = json.loads(f.readline())
+        assert entry["diagnostic_type"] == "mostly_wrong"
+        assert entry["correctness_ratio"] == pytest.approx(0.25)
+        assert entry["verifier_correct"] == [False, False, False, True]
+        os.unlink(path)
+
 
 class TestDeduplication:
     def test_dedup_by_prompt_id(self):

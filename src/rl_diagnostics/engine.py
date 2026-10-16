@@ -143,7 +143,15 @@ def run_diagnostics(
         for group in groups:
             group_qs = [q for q in quality_results
                         if q.group_id == group.group_id and q.step == group.step]
-            gs = diagnose_group_signal(group, group_qs, signal_config)
+            group_rollouts = [r for r in rollouts
+                              if r.group_id == group.group_id and r.step == group.step]
+            correctness_labels = [r.verifier_correct for r in group_rollouts]
+            if not any(label is not None for label in correctness_labels):
+                correctness_labels = None
+            gs = diagnose_group_signal(
+                group, group_qs, signal_config,
+                correctness_labels=correctness_labels,
+            )
             group_signals.append(gs)
 
         with open(os.path.join(output_dir, "group_diagnostics.csv"), "w", newline="") as f:
@@ -151,7 +159,8 @@ def run_diagnostics(
                 "experiment_id", "step", "group_id", "signal_type", "reason",
                 "rollout_count", "usable_count", "unique_reward_count",
                 "reward_range", "reward_std", "informative_pair_ratio",
-                "low_information", "correctness_type", "diagnostic_reason"
+                "positive_reward_ratio", "reward_outcome_type", "low_information",
+                "correctness_ratio", "correctness_type", "diagnostic_reason"
             ])
             writer.writeheader()
             for gs in group_signals:

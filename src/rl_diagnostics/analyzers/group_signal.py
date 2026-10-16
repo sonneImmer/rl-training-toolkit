@@ -28,10 +28,13 @@ class GroupSignalResult:
     reward_range: float = 0.0
     reward_std: float = 0.0
     informative_pair_ratio: float = 0.0
+    positive_reward_ratio: Optional[float] = None
+    reward_outcome_type: Optional[str] = None
     low_information: bool = False
     thresholds: dict = field(default_factory=dict)
     # Correctness (only when independent verifier available)
-    correctness_type: Optional[str] = None  # all_correct | all_wrong | mixed_correctness | unknown | partial
+    correctness_ratio: Optional[float] = None
+    correctness_type: Optional[str] = None  # all/mostly correct, all/mostly wrong, mixed, unknown, partial
     diagnostic_reason: str = ""
 
     def to_dict(self) -> dict:
@@ -48,6 +51,7 @@ class GroupSignalConfig:
     min_effective_ratio: float = 0.3  # min fraction of distinguishable pairs
     near_constant_abs_threshold: float = 1e-3
     near_constant_rel_threshold: float = 1e-2
+    extreme_ratio_threshold: float = 0.75
 
     def to_dict(self) -> dict:
         from dataclasses import asdict
@@ -195,6 +199,11 @@ def diagnose_group_signal(
     reward_range = max(usable_rewards) - min(usable_rewards) if usable_rewards else 0.0
     reward_mean = sum(usable_rewards) / n if n > 0 else 0.0
     reward_std = math.sqrt(sum((r - reward_mean) ** 2 for r in usable_rewards) / n) if n > 0 else 0.0
+    positive_reward_ratio = sum(r > 0 for r in usable_rewards) / n if n > 0 else None
+    reward_outcome_type = _classify_ratio(
+        positive_reward_ratio, config.extreme_ratio_threshold,
+        "positive", "non_positive", "mixed_reward",
+    )
 
     # Layer 2: Constant score (all same within tolerance)
     if unique_count <= 1:
@@ -219,15 +228,15 @@ def diagnose_group_signal(
 
     # Correctness (only with independent labels)
     correctness_type = None
+    correctness_ratio = None
     if correctness_labels is not None:
         valid_labels = [l for l in correctness_labels if l is not None]
         if len(valid_labels) == len(correctness_labels) and len(valid_labels) > 0:
-            if all(valid_labels):
-                correctness_type = "all_correct"
-            elif not any(valid_labels):
-                correctness_type = "all_wrong"
-            else:
-                correctness_type = "mixed_correctness"
+            correctness_ratio = sum(valid_labels) / len(valid_labels)
+            correctness_type = _classify_ratio(
+                correctness_ratio, config.extreme_ratio_threshold,
+                "correct", "wrong", "mixed_correctness",
+            )
         elif len(valid_labels) > 0:
             correctness_type = "partial"
         else:
@@ -254,8 +263,11 @@ def diagnose_group_signal(
         reward_range=reward_range,
         reward_std=reward_std,
         informative_pair_ratio=informative_ratio,
+        positive_reward_ratio=positive_reward_ratio,
+        reward_outcome_type=reward_outcome_type,
         low_information=low_info,
         thresholds=config.to_dict(),
+        correctness_ratio=correctness_ratio,
         correctness_type=correctness_type,
         diagnostic_reason=diag_reason,
     )
@@ -270,6 +282,23 @@ def _is_finite(val) -> bool:
         return not (math.isnan(v) or math.isinf(v))
     except (TypeError, ValueError):
         return False
+
+
+def _classify_ratio(
+    ratio: Optional[float], threshold: float,
+    positive_label: str, negative_label: str, mixed_label: str,
+) -> Optional[str]:
+    if ratio is None:
+        return None
+    if ratio == 1.0:
+        return f"all_{positive_label}"
+    if ratio == 0.0:
+        return f"all_{negative_label}"
+    if ratio >= threshold:
+        return f"mostly_{positive_label}"
+    if ratio <= 1.0 - threshold:
+        return f"mostly_{negative_label}"
+    return mixed_label
 
 
 @dataclass
@@ -293,6 +322,8 @@ class StepAggregation:
     near_constant_group_ratio: float = 0.0
     all_correct_group_ratio: Optional[float] = None
     all_wrong_group_ratio: Optional[float] = None
+    mostly_correct_group_ratio: Optional[float] = None
+    mostly_wrong_group_ratio: Optional[float] = None
     mean_informative_pair_ratio: float = 0.0
 
     def to_dict(self) -> dict:
@@ -333,10 +364,14 @@ def aggregate_step(
     # Correctness ratios (only if available)
     all_correct = sum(1 for g in step_groups if g.correctness_type == "all_correct")
     all_wrong = sum(1 for g in step_groups if g.correctness_type == "all_wrong")
+    mostly_correct = sum(1 for g in step_groups if g.correctness_type == "mostly_correct")
+    mostly_wrong = sum(1 for g in step_groups if g.correctness_type == "mostly_wrong")
     has_correctness = any(g.correctness_type is not None for g in step_groups)
 
     all_correct_ratio = all_correct / analyzable_count if (analyzable_count > 0 and has_correctness) else None
     all_wrong_ratio = all_wrong / analyzable_count if (analyzable_count > 0 and has_correctness) else None
+    mostly_correct_ratio = mostly_correct / analyzable_count if (analyzable_count > 0 and has_correctness) else None
+    mostly_wrong_ratio = mostly_wrong / analyzable_count if (analyzable_count > 0 and has_correctness) else None
 
     # Mean informative pair ratio
     informative_ratios = [g.informative_pair_ratio for g in analyzable if g.signal_type != "insufficient_group"]
@@ -360,5 +395,7 @@ def aggregate_step(
         near_constant_group_ratio=near_const_ratio,
         all_correct_group_ratio=all_correct_ratio,
         all_wrong_group_ratio=all_wrong_ratio,
+        mostly_correct_group_ratio=mostly_correct_ratio,
+        mostly_wrong_group_ratio=mostly_wrong_ratio,
         mean_informative_pair_ratio=mean_ipr,
     )

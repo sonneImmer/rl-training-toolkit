@@ -97,6 +97,8 @@ class RolloutRecord:
     response: Optional[str] = None
     training_reward: Optional[float] = None
     reward_source: str = "training"
+    prediction: Optional[str] = None
+    verifier_correct: Optional[bool] = None
     ground_truth: Optional[str] = None
     difficulty: Optional[str] = None
     source_dataset: Optional[str] = None

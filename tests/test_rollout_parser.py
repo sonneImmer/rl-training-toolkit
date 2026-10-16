@@ -136,6 +136,24 @@ class TestParseRolloutDir:
         group_a = [g for g in groups if g.group_id == "group_a_step1"][0]
         assert group_a.source_dataset == "math"
 
+    def test_verifier_evidence_extraction(self, tmp_path):
+        rollout_dir = tmp_path / "rollouts"
+        rollout_dir.mkdir()
+        record = {
+            "input": "question",
+            "output": "Answer: 4",
+            "score": 1.0,
+            "acc": True,
+            "pred": "4",
+            "uid": "group-1",
+        }
+        (rollout_dir / "1.jsonl").write_text(json.dumps(record) + "\n")
+
+        rollouts, _, _ = parse_rollout_dir(str(rollout_dir), EXP_ID)
+
+        assert rollouts[0].verifier_correct is True
+        assert rollouts[0].prediction == "4"
+
     def test_content_fingerprint_deterministic(self):
         """Content fingerprint should be deterministic."""
         fp1 = content_fingerprint("hello world")

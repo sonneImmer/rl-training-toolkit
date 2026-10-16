@@ -136,6 +136,18 @@ class TestCorrectnessSeparation:
         result = diagnose_group_signal(g, qs)
         assert result.correctness_type is None
 
+    def test_mostly_wrong_is_observation_not_difficulty(self):
+        g = _make_group(rewards=[-1.0, -1.0, -1.0, 1.0])
+        qs = _make_quality_all_usable(count=4)
+        result = diagnose_group_signal(
+            g, qs,
+            config=GroupSignalConfig(extreme_ratio_threshold=0.75),
+            correctness_labels=[False, False, False, True],
+        )
+        assert result.correctness_ratio == pytest.approx(0.25)
+        assert result.correctness_type == "mostly_wrong"
+        assert result.reward_outcome_type == "mostly_non_positive"
+
 
 class TestGroupUnresolved:
     def test_unresolved_group(self):

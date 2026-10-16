@@ -60,6 +60,22 @@ rl-diagnostics analyze \
 
 输出包含结构化 CSV/JSON、HTML 报告和可用于汇报的 SVG 图表。输入与输出目录默认由 `.gitignore` 排除。
 
+训练期只记录可复现事实：reward 分布、组内是否有学习信号、训练指标，以及训练产物中明确提供的 `acc/pred`。阈值用于筛选“接近全正/全负”或“接近全对/全错”的组，不生成经验难度，也不自动解释原因。原始数据没有 `difficulty` 时直接跳过该维度。
+
 ## Jupyter 实时监控
 
-打开 `notebooks/rl_rollout_live_monitor.ipynb`，设置 `RUN_DIR` 后运行。可观察有效回答率、正奖励率、全对/全错/混合组、reward、截断率、KL、entropy、gradient norm、advantage 和最新回答抽样。
+打开 `notebooks/rl_rollout_live_monitor.ipynb`，设置 `RUNS_ROOT` 和仓库外的 `STATE_DIR` 后运行。Notebook 展示实验目录、标准 rollout 质量、组内学习信号、可展开稳定性规则、训练趋势、原始 rollout 证据，以及两个实验之间的参数、最新指标和对齐趋势。只依赖 Python 标准库与 Jupyter 自带的 IPython。
+
+## 实验对象与前端看板
+
+正式看板将每个包含 `train.log` 的运行目录视为一个实验对象。训练过程中定时更新，结束后保留最终快照、标签事件和产物路径。状态目录应放在 Git 仓库之外：
+
+```bash
+rl-dashboard \
+  --runs-root /mnt/local/transformer_files/zkx/runs \
+  --state-dir /mnt/local/transformer_files/zkx/experiment_registry \
+  --host 0.0.0.0 \
+  --port 8765
+```
+
+浏览器打开 `http://<服务器地址>:8765`。看板只读取训练日志和 rollout，不控制训练进程；标签仅描述可验证现象，并保存规则版本、阈值和证据 step。
