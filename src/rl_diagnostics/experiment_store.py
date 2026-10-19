@@ -292,9 +292,9 @@ class ExperimentStore:
             progress_ratio = min(latest_step / total_steps, 1.0)
         run_manifest, manifest_missing = self._load_run_manifest(run_dir)
         parsed_config = {
-            "model": exp.model,
-            "algorithm": exp.algorithm,
-            "dataset": exp.dataset,
+            "model": exp.model or run_manifest.get("model", {}).get("id", ""),
+            "algorithm": exp.algorithm or run_manifest.get("training", {}).get("algorithm", ""),
+            "dataset": exp.dataset or run_manifest.get("dataset", {}).get("id", ""),
             "rollout_n": exp.rollout_n,
             "train_batch_size": exp.train_batch_size,
             "learning_rate": exp.learning_rate,

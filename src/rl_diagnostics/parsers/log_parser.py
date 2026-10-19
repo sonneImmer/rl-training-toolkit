@@ -175,7 +175,12 @@ def _extract_resolved_config_parameters(log_text: str) -> dict[str, Any]:
         matches = list(pattern.finditer(cleaned_text))
         match = matches[-1] if matches else None
         if match:
-            params[key] = _parse_value(match.group(1))
+            values = [_parse_value(item.group(1)) for item in matches]
+            if key == "trainer.total_training_steps":
+                positive = [value for value in values if isinstance(value, int) and value > 0]
+                params[key] = positive[-1] if positive else values[-1]
+            else:
+                params[key] = values[-1]
     model_match = _REFERENCE_MODEL_RE.search(cleaned_text)
     if model_match:
         params["actor_rollout_ref.model.path"] = _parse_value(model_match.group(1))
