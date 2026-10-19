@@ -12,9 +12,87 @@ set -euo pipefail
 : "${ADV_ESTIMATOR:=grpo}"
 : "${NGRPO_MAX_REWARD:=1.0}"
 : "${NGRPO_VIRTUAL_COUNT:=1}"
+: "${DOMAIN:=math}"
+: "${TASK_TYPE:=math_reasoning}"
+: "${FEATURE_COUNT:=unknown}"
+: "${CONTAINS_COT:=unknown}"
+: "${REWARD_DEFINITION:=unknown}"
+: "${REWARD_MIN:=}"
+: "${REWARD_MAX:=}"
+: "${RANDOM_SEED:=42}"
+: "${IMAGE_NAME:=unknown}"
+: "${IMAGE_ID:=unknown}"
+: "${PATCH_REVISION:=unknown}"
+: "${CODE_REVISION:=unknown}"
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 mkdir -p "$RUN_ROOT"
 RUN_DIR=$(mktemp -d "$RUN_ROOT/math-input-check.XXXXXXXX")
+export RUN_DIR MODEL_PATH DATA_DIR ASCEND_RT_VISIBLE_DEVICES TOTAL_STEPS
+export DOMAIN TASK_TYPE FEATURE_COUNT CONTAINS_COT REWARD_DEFINITION REWARD_MIN REWARD_MAX
+export RANDOM_SEED IMAGE_NAME IMAGE_ID PATCH_REVISION CODE_REVISION
+python3 - "$RUN_DIR/run_manifest.json" <<'PY_MANIFEST'
+import json
+import os
+import sys
+from pathlib import Path
+
+
+def optional_number(name):
+    value = os.environ.get(name, "").strip()
+    if not value:
+        return None
+    return float(value)
+
+
+def typed_value(name):
+    value = os.environ.get(name, "unknown").strip()
+    if value.lower() in {"true", "false"}:
+        return value.lower() == "true"
+    try:
+        return int(value)
+    except ValueError:
+        return value
+
+
+visible_devices = [item.strip() for item in os.environ["ASCEND_RT_VISIBLE_DEVICES"].split(",") if item.strip()]
+manifest = {
+    "schema_version": "1.0.0",
+    "task": {
+        "domain": os.environ["DOMAIN"],
+        "type": os.environ["TASK_TYPE"],
+    },
+    "dataset": {
+        "id": os.environ["DATA_DIR"],
+        "feature_count": typed_value("FEATURE_COUNT"),
+    },
+    "prompt": {
+        "contains_cot": typed_value("CONTAINS_COT"),
+    },
+    "reward": {
+        "definition": os.environ["REWARD_DEFINITION"],
+        "min": optional_number("REWARD_MIN"),
+        "max": optional_number("REWARD_MAX"),
+    },
+    "model": {
+        "id": os.environ["MODEL_PATH"],
+    },
+    "training": {
+        "seed": typed_value("RANDOM_SEED"),
+        "total_steps": int(os.environ["TOTAL_STEPS"]),
+    },
+    "resources": {
+        "npu_count": len(visible_devices),
+        "visible_devices": visible_devices,
+    },
+    "environment": {
+        "image": os.environ["IMAGE_NAME"],
+        "image_id": os.environ["IMAGE_ID"],
+        "patch_revision": os.environ["PATCH_REVISION"],
+        "code_revision": os.environ["CODE_REVISION"],
+    },
+}
+Path(sys.argv[1]).write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+PY_MANIFEST
 export VLLM_ASCEND_ENABLE_NZ=0
 export HYDRA_FULL_ERROR=1
 python3 "$SCRIPT_DIR/math_input_check.py" preflight --data "$DATA_DIR" --model "$MODEL_PATH" --output "$RUN_DIR/preflight" --max-prompt-length 2048

@@ -135,6 +135,25 @@ class TestParseLog:
         with pytest.raises(FileNotFoundError):
             parse_log("/nonexistent/path/to/log.txt")
 
+    def test_resolved_runtime_config_fallback(self, tmp_path):
+        log_path = tmp_path / "train.log"
+        log_path.write_text("\n".join([
+            "resolved config: {'adv_estimator': ngrpo, 'train_files': /data/train.parquet, 'train_batch_size': 8, 'rollout_n': 4, 'total_training_steps': 5}",
+            "actor config: {'optim': {'lr': 5e-07}}",
+            "reference model: /models/qwen7b",
+            "step:1 - critic/score/mean:0.25",
+        ]))
+
+        exp, _, report = parse_log(str(log_path))
+
+        assert exp.algorithm == "ngrpo"
+        assert exp.dataset == "/data/train.parquet"
+        assert exp.model == "/models/qwen7b"
+        assert exp.learning_rate == pytest.approx(5e-7)
+        assert exp.total_training_steps == 5
+        assert exp.config_sources == {"primary": "resolved_runtime_config"}
+        assert "command_line" not in report.missing_required
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

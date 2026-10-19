@@ -135,6 +135,21 @@ function diagnosticMetric(label, value) {
   return `<div class="diagnostic-metric"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`;
 }
 
+function manifestValue(manifest, section, key) {
+  return manifest?.[section]?.[key] ?? "未记录";
+}
+
+function readinessHtml(item) {
+  const readiness = item.comparison_readiness || {};
+  const ready = readiness.status === "ready";
+  const missing = readiness.missing_fields || [];
+  const missingText = missing.length ? `缺少：${missing.join("、")}` : "关键条件已记录";
+  return `<div class="readiness ${ready ? "ready" : "incomplete"}">
+    <strong>${ready ? "具备算法对比条件" : "暂不具备严格对比条件"}</strong>
+    <span>${escapeHtml(missingText)}</span>
+  </div>`;
+}
+
 function ruleStatusHtml(item) {
   const names = { triggered: "已触发", not_triggered: "未触发", not_evaluated: "未评估" };
   const ruleNames = {
@@ -182,10 +197,20 @@ function renderDetail() {
     <section class="metric-strip">
       ${metricItem("训练进度", `${progress.current_step ?? "-"}/${progress.total_steps ?? "-"}`)}
       ${metricItem("最新 Step 平均奖励", number(latest.reward_mean, 4))}
+      ${metricItem("Reward 范围", `${number(latest.reward_min, 3)} ~ ${number(latest.reward_max, 3)}`)}
+      ${metricItem("Reward 波动", number(latest.reward_std, 4))}
       ${metricItem("有效回答", percent(latest.valid_ratio))}
       ${metricItem("正奖励", percent(latest.positive_ratio))}
       ${metricItem("截断率", percent(latest.clip_ratio))}
       ${metricItem("Gradient Norm", number(latest.grad_norm, 4))}
+    </section>
+
+    <section class="section-band">
+      <div class="section-heading"><h3>实验可信度</h3><span>配置完整性</span></div>
+      <div class="section-content">
+        ${readinessHtml(item)}
+        <p class="muted-note">对比资格要求记录算法、模型、数据集、Reward 定义与范围、随机种子、训练预算、镜像和代码版本。</p>
+      </div>
     </section>
 
     <section class="section-band">
@@ -236,9 +261,13 @@ function renderDetail() {
     </section>
 
     <section class="section-band">
-      <div class="section-heading"><h3>运行配置</h3><span>从训练日志提取</span></div>
+      <div class="section-heading"><h3>运行配置</h3><span>日志与实验清单</span></div>
       <div class="section-content config-grid">
-        ${configCell("算法", item.config.algorithm)}${configCell("模型", item.config.model)}${configCell("数据集", item.config.dataset)}
+        ${configCell("算法", item.config.algorithm || "未记录")}${configCell("模型", item.config.model || "未记录")}${configCell("数据集", item.config.dataset || "未记录")}
+        ${configCell("领域", manifestValue(item.run_manifest, "task", "domain"))}${configCell("任务", manifestValue(item.run_manifest, "task", "type"))}${configCell("输入维度", manifestValue(item.run_manifest, "dataset", "feature_count"))}
+        ${configCell("Reward 定义", manifestValue(item.run_manifest, "reward", "definition"))}${configCell("Reward 最小值", manifestValue(item.run_manifest, "reward", "min"))}${configCell("Reward 最大值", manifestValue(item.run_manifest, "reward", "max"))}
+        ${configCell("是否包含 CoT", manifestValue(item.run_manifest, "prompt", "contains_cot"))}${configCell("随机种子", manifestValue(item.run_manifest, "training", "seed"))}${configCell("NPU 数量", manifestValue(item.run_manifest, "resources", "npu_count"))}
+        ${configCell("镜像", manifestValue(item.run_manifest, "environment", "image"))}${configCell("Patch 版本", manifestValue(item.run_manifest, "environment", "patch_revision"))}${configCell("代码版本", manifestValue(item.run_manifest, "environment", "code_revision"))}
         ${configCell("Rollout N", item.config.rollout_n)}${configCell("Batch Size", item.config.train_batch_size)}${configCell("Learning Rate", item.config.learning_rate)}
       </div>
     </section>
@@ -286,7 +315,7 @@ async function loadComparison() {
         ${result.latest_metric_rows.map((row) => `<tr><td>${escapeHtml(row.key)}</td>${row.values.map((value) => `<td>${number(value, 4)}</td>`).join("")}<td>${number(row.delta, 4)}</td></tr>`).join("") || '<tr><td colspan="4">暂无可比较指标</td></tr>'}
       </tbody></table></div>
       <div class="comparison-chart-heading"><h4>对齐 step 趋势</h4><select id="comparisonMetric">
-        <option value="reward_mean">Reward</option><option value="effective_group_ratio">有效 group</option>
+        <option value="reward_mean">平均奖励</option><option value="effective_group_ratio">有效 group</option>
         <option value="low_information_group_ratio">低信息 group</option><option value="mean_informative_pair_ratio">可区分 pair</option>
         <option value="kl_loss">KL</option><option value="entropy">Entropy</option><option value="grad_norm">Gradient Norm</option>
       </select></div><canvas id="comparisonChart"></canvas>`;

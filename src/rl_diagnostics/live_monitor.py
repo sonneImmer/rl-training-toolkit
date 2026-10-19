@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+import statistics
 from collections import Counter, defaultdict
 from pathlib import Path
 
@@ -100,6 +101,12 @@ def build_snapshot(
             valid = sum(bool(str(record.get("output", "")).strip()) for record in records)
         positive = sum(float(record.get("score", 0)) > 0 for record in records)
         advantages = [float(record["advantage"]) for record in records if record.get("advantage") is not None]
+        rewards = [
+            float(record.get("score", record.get("reward")))
+            for record in records
+            if isinstance(record.get("score", record.get("reward")), (int, float))
+            and not isinstance(record.get("score", record.get("reward")), bool)
+        ]
         steps.append({
             "step": step,
             "rollouts": len(records),
@@ -116,6 +123,9 @@ def build_snapshot(
             "mostly_positive_groups": reward_types["mostly_positive"],
             "mostly_non_positive_groups": reward_types["mostly_non_positive"],
             "reward_mean": metric.get("critic/score/mean"),
+            "reward_min": min(rewards) if rewards else metric.get("critic/score/min"),
+            "reward_max": max(rewards) if rewards else metric.get("critic/score/max"),
+            "reward_std": statistics.pstdev(rewards) if len(rewards) > 1 else (0.0 if rewards else None),
             "clip_ratio": metric.get("response_length/clip_ratio"),
             "entropy": metric.get("actor/entropy"),
             "kl_loss": metric.get("actor/kl_loss"),

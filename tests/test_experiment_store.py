@@ -97,3 +97,29 @@ def test_experiment_comparison_reports_parameter_changes(tmp_path):
     assert "actor_rollout_ref.actor.optim.lr" in changed
     reward_row = next(row for row in result["latest_metric_rows"] if row["key"] == "reward_mean")
     assert abs(reward_row["delta"]) == 0.2
+
+
+def test_run_manifest_controls_comparison_readiness(tmp_path):
+    run_dir = tmp_path / "runs" / "run-001"
+    run_dir.mkdir(parents=True)
+    (run_dir / "train.log").write_text("\n".join([
+        "python -m verl.trainer.main_ppo algorithm.adv_estimator=grpo trainer.total_training_steps=2",
+        "step:1 - critic/score/mean:0.5",
+    ]))
+    manifest = {
+        "model": {"id": "/models/qwen7b"},
+        "dataset": {"id": "/data/finance/train.parquet"},
+        "reward": {"definition": "risk classification reward", "min": -4, "max": 4},
+        "training": {"seed": 42, "total_steps": 2},
+        "environment": {"image": "openpangu:v1", "code_revision": "abc123"},
+    }
+    (run_dir / "run_manifest.json").write_text(json.dumps(manifest))
+
+    snapshot = ExperimentStore(tmp_path / "runs", tmp_path / "state").refresh_all()[0]
+
+    assert snapshot["run_manifest"] == manifest
+    assert snapshot["comparison_readiness"]["eligible"] is True
+    indexed = ExperimentStore(tmp_path / "runs", tmp_path / "state").list_experiments()[0]
+    assert indexed["comparison_readiness"]["eligible"] is True
+    persisted = json.loads((tmp_path / "state" / "experiments" / snapshot["experiment_id"] / "manifest.json").read_text())
+    assert persisted["comparison_readiness"]["status"] == "ready"

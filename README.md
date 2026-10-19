@@ -90,3 +90,21 @@ rl-dashboard \
 ```
 
 浏览器打开 `http://<服务器地址>:8765`。看板只读取训练日志和 rollout，不控制训练进程；标签仅描述可验证现象，并保存规则版本、阈值和证据 step。
+
+新实验应在运行目录写入 `run_manifest.json`。`tools/verified_math/run_verified_math.sh` 会自动生成该文件，可通过环境变量补充实验事实：
+
+```bash
+export DOMAIN=finance_risk
+export TASK_TYPE=risk_classification
+export FEATURE_COUNT=36
+export CONTAINS_COT=true
+export REWARD_DEFINITION=finance_risk_v1
+export REWARD_MIN=-4
+export REWARD_MAX=4
+export RANDOM_SEED=42
+export IMAGE_NAME=openpangu-72b-2512-postrain:v1
+export PATCH_REVISION=ngrpo-patch-v1
+export CODE_REVISION=$(git rev-parse HEAD)
+```
+
+看板使用清单展示任务、Reward、资源和版本，并检查实验是否具备严格算法对比所需的配置记录。旧实验没有清单时显示“未记录”，不会猜测缺失信息。

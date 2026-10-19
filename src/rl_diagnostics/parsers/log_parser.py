@@ -44,17 +44,17 @@ _KV_RE = re.compile(r"([a-zA-Z_][\w/.]*):(-?\d+\.?\d*(?:[eE][+-]?\d+)?|-?\d+|nan
 _VAL_METRICS_RE = re.compile(r"validation metrics:\s*(\{.*\})")
 # VERL prints the resolved Hydra config even when the shell command is not logged.
 _RESOLVED_CONFIG_FIELDS = {
-    "algorithm.adv_estimator": re.compile(r"'adv_estimator':\s*([^,\n]+)"),
-    "data.train_files": re.compile(r"'train_files':\s*([^,\n]+)"),
-    "data.train_batch_size": re.compile(r"'train_batch_size':\s*([^,\n]+)"),
-    "actor_rollout_ref.rollout.n": re.compile(r"'rollout_n':\s*([^,\n]+)"),
-    "actor_rollout_ref.actor.optim.lr": re.compile(r"'lr':\s*([^,\n]+)"),
-    "trainer.experiment_name": re.compile(r"'experiment_name':\s*([^,\n]+)"),
-    "trainer.project_name": re.compile(r"'project_name':\s*([^,\n]+)"),
-    "trainer.total_epochs": re.compile(r"'total_epochs':\s*([^,\n]+)"),
-    "trainer.total_training_steps": re.compile(r"'total_training_steps':\s*([^,\n]+)"),
+    "algorithm.adv_estimator": re.compile(r"'adv_estimator':\s*([^,}\n]+)"),
+    "data.train_files": re.compile(r"'train_files':\s*([^,}\n]+)"),
+    "data.train_batch_size": re.compile(r"'train_batch_size':\s*([^,}\n]+)"),
+    "actor_rollout_ref.rollout.n": re.compile(r"'rollout_n':\s*([^,}\n]+)"),
+    "trainer.experiment_name": re.compile(r"'experiment_name':\s*([^,}\n]+)"),
+    "trainer.project_name": re.compile(r"'project_name':\s*([^,}\n]+)"),
+    "trainer.total_epochs": re.compile(r"'total_epochs':\s*([^,}\n]+)"),
+    "trainer.total_training_steps": re.compile(r"'total_training_steps':\s*([^,}\n]+)"),
 }
-_REFERENCE_MODEL_RE = re.compile(r"reference model:\s*(\S+)")
+_REFERENCE_MODEL_RE = re.compile(r"reference model:\s*([^\s(]+)")
+_ACTOR_LR_RE = re.compile(r"'optim':\s*\{.*?'lr':\s*([^,}\n]+)", re.DOTALL)
 
 # ── Known metric name groups ─────────────────────────────────────────
 _KNOWN_METRIC_NAMES = {
@@ -179,6 +179,9 @@ def _extract_resolved_config_parameters(log_text: str) -> dict[str, Any]:
     model_match = _REFERENCE_MODEL_RE.search(cleaned_text)
     if model_match:
         params["actor_rollout_ref.model.path"] = _parse_value(model_match.group(1))
+    actor_lr_match = _ACTOR_LR_RE.search(cleaned_text)
+    if actor_lr_match:
+        params["actor_rollout_ref.actor.optim.lr"] = _parse_value(actor_lr_match.group(1))
     return params
 
 def _build_experiment_record(

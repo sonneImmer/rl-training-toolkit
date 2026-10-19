@@ -49,11 +49,14 @@ def _summary(item: dict) -> dict:
         "updated_at": item.get("updated_at"),
         "finished_at": item.get("finished_at"),
         "config": item.get("config", {}),
+        "comparison_readiness": item.get("comparison_readiness", {}),
+        "run_manifest": item.get("run_manifest", {}),
+        "manifest_missing": item.get("manifest_missing", []),
         "progress": item.get("progress", {}),
         "labels": item.get("labels", []),
         "latest_metrics": {
             key: latest.get(key) for key in (
-                "reward_mean", "valid_ratio", "positive_ratio", "clip_ratio",
+                "reward_mean", "reward_min", "reward_max", "reward_std", "valid_ratio", "positive_ratio", "clip_ratio",
                 "entropy", "kl_loss", "grad_norm", "rollouts",
             )
         },

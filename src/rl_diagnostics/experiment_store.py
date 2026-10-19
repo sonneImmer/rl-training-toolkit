@@ -115,6 +115,44 @@ class ExperimentStore:
             return "running"
         return "stopped"
 
+    @staticmethod
+    def _load_run_manifest(run_dir: Path) -> tuple[dict, list[str]]:
+        path = run_dir / "run_manifest.json"
+        if not path.is_file():
+            return {}, ["run_manifest.json"]
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return {}, ["run_manifest_invalid"]
+        if not isinstance(data, dict):
+            return {}, ["run_manifest_invalid"]
+        return data, []
+
+    @staticmethod
+    def _comparison_readiness(manifest: dict, config: dict) -> dict:
+        fields = {
+            "algorithm": config.get("algorithm"),
+            "model": manifest.get("model", {}).get("id") or config.get("model"),
+            "dataset": manifest.get("dataset", {}).get("id") or config.get("dataset"),
+            "reward_definition": manifest.get("reward", {}).get("definition"),
+            "reward_min": manifest.get("reward", {}).get("min"),
+            "reward_max": manifest.get("reward", {}).get("max"),
+            "seed": manifest.get("training", {}).get("seed"),
+            "training_budget": manifest.get("training", {}).get("total_steps") or config.get("total_training_steps"),
+            "image": manifest.get("environment", {}).get("image"),
+            "code_revision": manifest.get("environment", {}).get("code_revision"),
+        }
+        missing = [
+            key for key, value in fields.items()
+            if value in (None, "", [], "unknown", "UNKNOWN", "未记录")
+        ]
+        return {
+            "eligible": not missing,
+            "status": "ready" if not missing else "incomplete",
+            "missing_fields": missing,
+            "fields": fields,
+        }
+
     def _build_diagnostics(self, experiment_id: str, rollout_dir: Path, metrics: list) -> dict:
         if not rollout_dir.is_dir():
             return {
@@ -252,6 +290,18 @@ class ExperimentStore:
         progress_ratio = None
         if latest_step is not None and total_steps:
             progress_ratio = min(latest_step / total_steps, 1.0)
+        run_manifest, manifest_missing = self._load_run_manifest(run_dir)
+        parsed_config = {
+            "model": exp.model,
+            "algorithm": exp.algorithm,
+            "dataset": exp.dataset,
+            "rollout_n": exp.rollout_n,
+            "train_batch_size": exp.train_batch_size,
+            "learning_rate": exp.learning_rate,
+            "total_epochs": exp.total_epochs,
+            "total_training_steps": total_steps,
+        }
+        comparison_readiness = self._comparison_readiness(run_manifest, parsed_config)
 
         snapshot = {
             "schema_version": "1.0.0",
@@ -262,16 +312,10 @@ class ExperimentStore:
             "started_at": _iso(started_mtime),
             "updated_at": _iso(activity_mtime),
             "finished_at": _iso(activity_mtime) if status in ("completed", "completed_with_errors", "failed", "stopped") else None,
-            "config": {
-                "model": exp.model,
-                "algorithm": exp.algorithm,
-                "dataset": exp.dataset,
-                "rollout_n": exp.rollout_n,
-                "train_batch_size": exp.train_batch_size,
-                "learning_rate": exp.learning_rate,
-                "total_epochs": exp.total_epochs,
-                "total_training_steps": total_steps,
-            },
+            "config": parsed_config,
+            "run_manifest": run_manifest,
+            "manifest_missing": manifest_missing,
+            "comparison_readiness": comparison_readiness,
             "config_parameters": exp.raw_parameters,
             "config_sources": exp.config_sources,
             "config_conflicts": exp.config_conflicts,
@@ -303,8 +347,9 @@ class ExperimentStore:
         _atomic_json(object_dir / "manifest.json", {
             key: snapshot[key] for key in (
                 "schema_version", "experiment_id", "name", "status", "run_dir",
-                "started_at", "updated_at", "finished_at", "config", "progress",
-                "rule_version", "rule_config", "artifacts",
+                "started_at", "updated_at", "finished_at", "config", "run_manifest",
+                "manifest_missing", "comparison_readiness", "progress", "rule_version",
+                "rule_config", "artifacts",
             )
         })
         _atomic_json(object_dir / "snapshot.json", snapshot)
@@ -368,6 +413,9 @@ class ExperimentStore:
             "updated_at": item.get("updated_at"),
             "finished_at": item.get("finished_at"),
             "config": item.get("config", {}),
+            "run_manifest": item.get("run_manifest", {}),
+            "manifest_missing": item.get("manifest_missing", []),
+            "comparison_readiness": item.get("comparison_readiness", {}),
             "progress": item.get("progress", {}),
             "labels": item.get("labels", []),
             "latest_metrics": latest,

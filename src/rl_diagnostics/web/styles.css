@@ -136,14 +136,15 @@ button { cursor: pointer; }
 
 .metric-strip {
   display: grid;
-  grid-template-columns: repeat(6, minmax(110px, 1fr));
+  grid-template-columns: repeat(4, minmax(110px, 1fr));
   border: 1px solid var(--line-strong);
   background: var(--surface);
   margin-bottom: 16px;
 }
 
-.metric-item { min-width: 0; padding: 12px 14px; border-right: 1px solid var(--line); }
-.metric-item:last-child { border-right: 0; }
+.metric-item { min-width: 0; padding: 12px 14px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.metric-item:nth-child(4n) { border-right: 0; }
+.metric-item:nth-last-child(-n+4) { border-bottom: 0; }
 .metric-item span { display: block; color: var(--muted); font-size: 11px; }
 .metric-item strong { display: block; margin-top: 3px; font-size: 19px; overflow: hidden; text-overflow: ellipsis; }
 
@@ -214,8 +215,10 @@ button { cursor: pointer; }
 
 @media (max-width: 1050px) {
   .metric-strip { grid-template-columns: repeat(3, 1fr); }
-  .metric-item:nth-child(3) { border-right: 0; }
-  .metric-item:nth-child(-n+3) { border-bottom: 1px solid var(--line); }
+  .metric-item:nth-child(4n) { border-right: 1px solid var(--line); }
+  .metric-item:nth-child(3n) { border-right: 0; }
+  .metric-item:nth-last-child(-n+4) { border-bottom: 1px solid var(--line); }
+  .metric-item:nth-last-child(-n+2) { border-bottom: 0; }
   .config-grid { grid-template-columns: repeat(2, 1fr); }
   .diagnostic-grid { grid-template-columns: repeat(3, 1fr); }
 }
@@ -228,8 +231,9 @@ button { cursor: pointer; }
   .experiment-panel { max-height: 42vh; border-right: 0; border-bottom: 1px solid var(--line-strong); }
   .detail-panel { padding: 16px 12px 30px; }
   .metric-strip { grid-template-columns: repeat(2, 1fr); }
-  .metric-item { border-bottom: 1px solid var(--line); }
+  .metric-item:nth-child(3n) { border-right: 1px solid var(--line); }
   .metric-item:nth-child(2n) { border-right: 0; }
+  .metric-item:nth-last-child(-n+2) { border-bottom: 0; }
   .chart-grid, .config-grid, .rule-list { grid-template-columns: 1fr; }
   .diagnostic-grid { grid-template-columns: repeat(2, 1fr); }
   .comparison-picker { display: grid; }
@@ -237,3 +241,9 @@ button { cursor: pointer; }
   .detail-header { display: block; }
   .status-badge { display: inline-block; margin-top: 10px; }
 }
+
+.readiness { display: flex; align-items: baseline; gap: 10px; padding: 10px 12px; border-left: 3px solid var(--warning); background: var(--warning-soft); }
+.readiness.ready { border-color: var(--accent); background: var(--accent-soft); }
+.readiness strong { font-size: 13px; }
+.readiness span, .muted-note { color: var(--muted); font-size: 12px; }
+.muted-note { margin: 9px 0 0; }
