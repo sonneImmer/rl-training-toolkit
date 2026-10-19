@@ -42,6 +42,19 @@ _KV_RE = re.compile(r"([a-zA-Z_][\w/.]*):(-?\d+\.?\d*(?:[eE][+-]?\d+)?|-?\d+|nan
 # ── Validation metrics pattern ───────────────────────────────────────
 # "Initial validation metrics: {'key': val, ...}"
 _VAL_METRICS_RE = re.compile(r"validation metrics:\s*(\{.*\})")
+# VERL prints the resolved Hydra config even when the shell command is not logged.
+_RESOLVED_CONFIG_FIELDS = {
+    "algorithm.adv_estimator": re.compile(r"'adv_estimator':\s*([^,\n]+)"),
+    "data.train_files": re.compile(r"'train_files':\s*([^,\n]+)"),
+    "data.train_batch_size": re.compile(r"'train_batch_size':\s*([^,\n]+)"),
+    "actor_rollout_ref.rollout.n": re.compile(r"'rollout_n':\s*([^,\n]+)"),
+    "actor_rollout_ref.actor.optim.lr": re.compile(r"'lr':\s*([^,\n]+)"),
+    "trainer.experiment_name": re.compile(r"'experiment_name':\s*([^,\n]+)"),
+    "trainer.project_name": re.compile(r"'project_name':\s*([^,\n]+)"),
+    "trainer.total_epochs": re.compile(r"'total_epochs':\s*([^,\n]+)"),
+    "trainer.total_training_steps": re.compile(r"'total_training_steps':\s*([^,\n]+)"),
+}
+_REFERENCE_MODEL_RE = re.compile(r"reference model:\s*(\S+)")
 
 # ── Known metric name groups ─────────────────────────────────────────
 _KNOWN_METRIC_NAMES = {
@@ -153,6 +166,20 @@ def parse_parameters(command_line: str) -> tuple[dict[str, Any], list[dict[str, 
     
     return params, conflicts
 
+
+def _extract_resolved_config_parameters(log_text: str) -> dict[str, Any]:
+    """Extract key runtime fields from VERL's resolved Hydra config dump."""
+    cleaned_text = "\n".join(_clean_line(line) for line in log_text.splitlines())
+    params: dict[str, Any] = {}
+    for key, pattern in _RESOLVED_CONFIG_FIELDS.items():
+        matches = list(pattern.finditer(cleaned_text))
+        match = matches[-1] if matches else None
+        if match:
+            params[key] = _parse_value(match.group(1))
+    model_match = _REFERENCE_MODEL_RE.search(cleaned_text)
+    if model_match:
+        params["actor_rollout_ref.model.path"] = _parse_value(model_match.group(1))
+    return params
 
 def _build_experiment_record(
     params: dict[str, Any],
@@ -329,12 +356,22 @@ def parse_log(
         else:
             report.missing_required.append("command_line")
     else:
-        report.missing_required.append("command_line")
+        params = _extract_resolved_config_parameters(log_text)
+        if params:
+            config_source = "resolved_runtime_config"
+            report.parsed_lines += 1
+            report.warnings.append({
+                "type": "resolved_config_fallback",
+                "message": "Parameters extracted from VERL's resolved runtime config because the launch command was not logged.",
+            })
+        else:
+            report.missing_required.append("command_line")
     
     report.config_conflicts = conflicts
     
     # ── Build experiment record ──────────────────────────────────────
     exp = _build_experiment_record(params, conflicts, log_path)
+    exp.config_sources = {"primary": config_source}
     if experiment_id_override:
         exp.experiment_id = experiment_id_override
     report.experiment_id = exp.experiment_id

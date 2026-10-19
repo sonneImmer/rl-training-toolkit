@@ -92,7 +92,7 @@ function renderList() {
         <span>${timeText(item.updated_at)}</span>
       </div>
       <div class="row-metrics">
-        <span>reward ${number(latest.reward_mean, 3)}</span>
+        <span title="最新训练 Step 内全部 rollout 奖励的算术平均值">最新步平均奖励 ${number(latest.reward_mean, 3)}</span>
         <span>有效 ${percent(latest.valid_ratio)}</span>
         <span>标签 ${item.labels?.length || 0}</span>
       </div>
@@ -181,7 +181,7 @@ function renderDetail() {
 
     <section class="metric-strip">
       ${metricItem("训练进度", `${progress.current_step ?? "-"}/${progress.total_steps ?? "-"}`)}
-      ${metricItem("平均 Reward", number(latest.reward_mean, 4))}
+      ${metricItem("最新 Step 平均奖励", number(latest.reward_mean, 4))}
       ${metricItem("有效回答", percent(latest.valid_ratio))}
       ${metricItem("正奖励", percent(latest.positive_ratio))}
       ${metricItem("截断率", percent(latest.clip_ratio))}
@@ -196,7 +196,7 @@ function renderDetail() {
     <section class="section-band">
       <div class="section-heading"><h3>训练指标</h3><span>按 step 更新</span></div>
       <div class="section-content chart-grid">
-        <div class="chart-block"><h4>Reward / 有效回答</h4><canvas id="rewardChart"></canvas></div>
+        <div class="chart-block"><h4>每 Step 平均奖励 / 有效回答</h4><canvas id="rewardChart"></canvas></div>
         <div class="chart-block"><h4>KL / Entropy</h4><canvas id="policyChart"></canvas></div>
         <div class="chart-block"><h4>Gradient Norm</h4><canvas id="gradientChart"></canvas></div>
         <div class="chart-block"><h4>正确性分组</h4><canvas id="groupChart"></canvas></div>
@@ -341,7 +341,7 @@ function drawLineChart(id, rows, series) {
 
 function drawCharts(rows) {
   drawLineChart("rewardChart", rows, [
-    { key: "reward_mean", label: "reward", color: "#176b5b" },
+    { key: "reward_mean", label: "平均奖励", color: "#176b5b" },
     { key: "valid_ratio", label: "valid", color: "#285a8e" },
   ]);
   drawLineChart("policyChart", rows, [
