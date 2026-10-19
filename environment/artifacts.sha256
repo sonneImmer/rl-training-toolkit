@@ -1,0 +1,5 @@
+cf6f1c06afed596165f8c5a98535267da5be49c29459299c460951c9b63cac24  /mnt/local/pangu_rl/src/repo/openpangu-72b-2512-postrain-v1.tar.gz
+image_manifest:
+openpangu-72b-2512-postrain:v1-zkx-pangu-mathfix sha256:ea9d28f13a103f7016f3cee624826a6186b022a588ae9d208f27264111b61d7a 20466698492 bytes
+model_config:
+f7c4eadfbbf522470667b797a3c89be2524832d2d599797248dc304fff447c30  /mnt/local/pangu_rl/models/qwen3-8b/config.json
