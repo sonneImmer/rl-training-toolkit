@@ -1,0 +1,51 @@
+{
+  "schema_version": "1.0.0",
+  "experiment_date": "2026-10-21",
+  "case_id": "amlsim-rl-case-20261021",
+  "upstream": {
+    "repository": "https://github.com/IBM/AMLSim.git",
+    "revision": "7338a4bcb1af9bcfea2201ad7daccfe2a4d569ca",
+    "license": "Apache-2.0",
+    "usage": "typology direction semantics only; original simulator was not executed"
+  },
+  "dataset": {
+    "id": "amlsim_typology_rules_v1",
+    "generator": "tools/amlsim/prepare_amlsim_typology.py",
+    "seed": 42,
+    "train_rows": 2400,
+    "dev_rows": 400,
+    "test_rows": 800,
+    "manifest": "dataset_manifest.json",
+    "rule_cards": "rule_cards.json"
+  },
+  "model": {
+    "family": "Qwen3-8B",
+    "historical_host_path": "/mnt/local/pangu_rl/models/qwen3-8b",
+    "portable_requirement": "provide the same model revision and record its content hash"
+  },
+  "environment": {
+    "accelerator": "8x Ascend 910B3",
+    "image": "openpangu-72b-2512-postrain:v1-zkx-pangu-mathfix",
+    "image_recorded_id": "d2a7a76de939-derived",
+    "current_local_image_digest": "sha256:ea9d28f13a103f7016f3cee624826a6186b022a588ae9d208f27264111b61d7a",
+    "experiment_code_revision": "dcf791335687fb2b0591497b485733fafe66644c"
+  },
+  "runs": {
+    "sft_eos_fixed": "amlsim-sft.ERWFretm",
+    "grpo": "amlsim-rl.sI3sESZn",
+    "ngrpo": "amlsim-rl.lIeJXKjY"
+  },
+  "evaluations": {
+    "base": "E0-base-full",
+    "sft_initial_step80": "E1-sft-step80-full",
+    "sft_eos_fixed_step30": "E1b-sft-eos-step30-full",
+    "grpo_step5": "E2-grpo-step5-full",
+    "ngrpo_step1": "E3a-ngrpo-step1-full",
+    "ngrpo_step4": "E3b-ngrpo-step4-full",
+    "ngrpo_step5": "E3-ngrpo-step5-full"
+  },
+  "artifact_policy": {
+    "committed": "metrics, manifests, rollout summaries, aggregate CSV, SVG charts, documentation",
+    "excluded": "model weights, checkpoints, parquet data, full predictions, full rollouts, training logs"
+  }
+}

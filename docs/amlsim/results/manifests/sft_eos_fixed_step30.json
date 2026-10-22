@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0.0",
+  "task": {
+    "domain": "amlsim",
+    "type": "aml_risk_typology_evidence_sft"
+  },
+  "dataset": {
+    "id": "/mnt/data",
+    "typologies": [
+      "FAN_IN",
+      "FAN_OUT",
+      "CYCLE",
+      "NORMAL"
+    ]
+  },
+  "prompt": {
+    "contains_cot": false,
+    "target": "Risk/Typology/Evidence three-line format"
+  },
+  "model": {
+    "id": "/mnt/model"
+  },
+  "training": {
+    "algorithm": "sft",
+    "seed": 42,
+    "total_steps": 30
+  },
+  "resources": {
+    "npu_count": 8,
+    "visible_devices": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7"
+    ]
+  }
+}

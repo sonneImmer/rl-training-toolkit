@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0.0",
+  "source": "AMLSim typology semantics",
+  "source_repository": "https://github.com/IBM/AMLSim.git",
+  "source_revision": "7338a4bcb1af9bcfea2201ad7daccfe2a4d569ca",
+  "rules": {
+    "FAN_IN": "At least four distinct source accounts transfer to one hub account within 48 hours.",
+    "FAN_OUT": "One hub account transfers to at least four distinct destination accounts within 48 hours.",
+    "CYCLE": "At least four accounts form a closed directed transfer cycle within 72 hours.",
+    "NORMAL": "No complete FAN_IN, FAN_OUT, or CYCLE pattern is present; near-patterns with a broken condition remain NORMAL."
+  },
+  "rule_provenance": {
+    "upstream_semantics": {
+      "FAN_IN": "AMLSim models multiple originator accounts sending to one main beneficiary account.",
+      "FAN_OUT": "AMLSim models one main originator account distributing to multiple beneficiary accounts.",
+      "CYCLE": "AMLSim models directed transfers that return from the final member to the first member."
+    },
+    "experiment_defined_parameters": {
+      "minimum_distinct_counterparties": 4,
+      "fan_in_window_hours": 48,
+      "fan_out_window_hours": 48,
+      "cycle_window_hours": 72,
+      "normal_controls": [
+        "broken_fan_in",
+        "broken_fan_out",
+        "broken_cycle",
+        "ordinary"
+      ],
+      "statement": "Thresholds, time windows, negative-control construction, class balance, prompt format, and reward weights are experiment-specific choices. They are not claimed as AMLSim defaults or validated bank production rules."
+    }
+  },
+  "reward_contract": {
+    "risk": "binary SUSPICIOUS/NORMAL",
+    "typology": [
+      "FAN_IN",
+      "FAN_OUT",
+      "CYCLE",
+      "NORMAL"
+    ],
+    "evidence": "exact transaction IDs forming the injected suspicious pattern"
+  }
+}

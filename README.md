@@ -7,7 +7,9 @@
 - `src/rl_diagnostics/`：解析日志和 rollout，分析组内信号、回答质量与训练稳定性，并输出 HTML/SVG。
 - `notebooks/`：适用于只有 Jupyter/终端环境的按 step 实时监控页面。
 
-本仓库不保存模型、数据集、训练日志、rollout 原文或实验产物。
+本仓库不保存模型、数据集、训练日志、完整 rollout 原文或检查点。为保证案例可审计，`docs/amlsim/results/` 保存经过标准化的小型指标快照、运行清单和汇报图表；原始大文件由确定性脚本、数据哈希和复现手册定位。
+
+AMLSim 反洗钱案例入口：`docs/amlsim/README.md`。
 
 ## 安装
 

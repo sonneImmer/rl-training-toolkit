@@ -1,0 +1,51 @@
+{
+  "schema_version": "1.0.0",
+  "task": {
+    "domain": "amlsim",
+    "type": "aml_risk_typology_evidence"
+  },
+  "dataset": {
+    "id": "/mnt/data",
+    "typologies": [
+      "FAN_IN",
+      "FAN_OUT",
+      "CYCLE",
+      "NORMAL"
+    ]
+  },
+  "prompt": {
+    "contains_cot": false
+  },
+  "reward": {
+    "definition": "amlsim_risk_typology_evidence_v1",
+    "min": -4.0,
+    "max": 4.0
+  },
+  "model": {
+    "id": "/mnt/model"
+  },
+  "training": {
+    "algorithm": "grpo",
+    "seed": 42,
+    "total_steps": 5
+  },
+  "resources": {
+    "npu_count": 8,
+    "visible_devices": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7"
+    ]
+  },
+  "environment": {
+    "image": "openpangu-72b-2512-postrain:v1-zkx-pangu-mathfix",
+    "image_id": "d2a7a76de939-derived",
+    "patch_revision": "rollout-json-mathfix",
+    "code_revision": "dcf791335687fb2b0591497b485733fafe66644c"
+  }
+}

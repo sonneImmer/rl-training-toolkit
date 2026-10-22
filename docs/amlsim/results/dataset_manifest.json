@@ -1,0 +1,81 @@
+{
+  "schema_version": "1.0.0",
+  "dataset_id": "amlsim_typology_rules_v1",
+  "source_repository": "IBM/AMLSim",
+  "source_repository_url": "https://github.com/IBM/AMLSim.git",
+  "source_revision": "7338a4bcb1af9bcfea2201ad7daccfe2a4d569ca",
+  "license": "Apache-2.0",
+  "generation": {
+    "method": "deterministic controlled typology generator",
+    "uses_original_amlsim_simulator": false,
+    "rule_provenance": {
+      "upstream_semantics": {
+        "FAN_IN": "AMLSim models multiple originator accounts sending to one main beneficiary account.",
+        "FAN_OUT": "AMLSim models one main originator account distributing to multiple beneficiary accounts.",
+        "CYCLE": "AMLSim models directed transfers that return from the final member to the first member."
+      },
+      "experiment_defined_parameters": {
+        "minimum_distinct_counterparties": 4,
+        "fan_in_window_hours": 48,
+        "fan_out_window_hours": 48,
+        "cycle_window_hours": 72,
+        "normal_controls": [
+          "broken_fan_in",
+          "broken_fan_out",
+          "broken_cycle",
+          "ordinary"
+        ],
+        "statement": "Thresholds, time windows, negative-control construction, class balance, prompt format, and reward weights are experiment-specific choices. They are not claimed as AMLSim defaults or validated bank production rules."
+      }
+    }
+  },
+  "seed": 42,
+  "typologies": [
+    "FAN_IN",
+    "FAN_OUT",
+    "CYCLE",
+    "NORMAL"
+  ],
+  "contains_free_text_cot": false,
+  "splits": {
+    "train": {
+      "rows": 2400,
+      "class_counts": {
+        "FAN_IN": 600,
+        "FAN_OUT": 600,
+        "CYCLE": 600,
+        "NORMAL": 600
+      },
+      "rl_sha256": "c4761c1be0c90cd9bd5e2d7f6b78c4d24d24fe32a7f91f9dd74823c1b7a6b846",
+      "sft_sha256": "a6fb121188f977582b09d970c82ec87ca4e07486ad36f4a54aeb381bfef4a028"
+    },
+    "dev": {
+      "rows": 400,
+      "class_counts": {
+        "FAN_IN": 100,
+        "FAN_OUT": 100,
+        "CYCLE": 100,
+        "NORMAL": 100
+      },
+      "rl_sha256": "7314eec6cd073865e7aa8c3367128aafcc0daeb8b2c6bfa4c746acda35cd5028",
+      "sft_sha256": "7afb57b633dcd94296f6f7c1b11c5d50992b65fb934ed756cac07d87b6f831db"
+    },
+    "test": {
+      "rows": 800,
+      "class_counts": {
+        "FAN_IN": 200,
+        "FAN_OUT": 200,
+        "CYCLE": 200,
+        "NORMAL": 200
+      },
+      "rl_sha256": "1acb3214fb3d912b8cfac64ddacac0a27ec51ee73fd45d9b0937f9f5c9cc6b1d",
+      "sft_sha256": "9d23bc8d767b2c3a7586f98117de2a6a1293226d390476b0b53b88d1ac27451d"
+    }
+  },
+  "limitations": [
+    "Synthetic typology cases do not represent real-bank prevalence.",
+    "Rules are deterministic and may be easier than unseen real AML behavior.",
+    "Experiment thresholds and reward weights have not been validated as bank production policy.",
+    "Account identities do not overlap across splits."
+  ]
+}

@@ -1,0 +1,339 @@
+[
+  {
+    "step": 1,
+    "rows": 64,
+    "groups": 16,
+    "exact_rate": 0.703125,
+    "format_valid_rate": 0.96875,
+    "mean_reward": 3.1360743423243425,
+    "min_reward": -4.0,
+    "max_reward": 4.0,
+    "gradient_groups": 5,
+    "gradient_group_rate": 0.3125,
+    "all_correct": 10,
+    "all_wrong": 4,
+    "mixed": 1,
+    "near_all_correct": 1,
+    "expected_groups": {
+      "NORMAL": 2,
+      "FAN_OUT": 4,
+      "FAN_IN": 5,
+      "CYCLE": 5
+    },
+    "per_typology": {
+      "CYCLE": {
+        "groups": 5,
+        "exact_rate": 0.8,
+        "mean_reward": 3.0,
+        "gradient_group_rate": 0.2,
+        "all_correct": 4,
+        "all_wrong": 1,
+        "near_all_correct": 0,
+        "near_all_wrong": 0,
+        "mixed": 0
+      },
+      "FAN_IN": {
+        "groups": 5,
+        "exact_rate": 0.7,
+        "mean_reward": 3.89939393939394,
+        "gradient_group_rate": 0.4,
+        "all_correct": 3,
+        "all_wrong": 1,
+        "near_all_correct": 0,
+        "near_all_wrong": 0,
+        "mixed": 1
+      },
+      "FAN_OUT": {
+        "groups": 4,
+        "exact_rate": 0.6875,
+        "mean_reward": 3.9200549450549453,
+        "gradient_group_rate": 0.5,
+        "all_correct": 2,
+        "all_wrong": 1,
+        "near_all_correct": 1,
+        "near_all_wrong": 0,
+        "mixed": 0
+      },
+      "NORMAL": {
+        "groups": 2,
+        "exact_rate": 0.5,
+        "mean_reward": 0.0,
+        "gradient_group_rate": 0.0,
+        "all_correct": 1,
+        "all_wrong": 1,
+        "near_all_correct": 0,
+        "near_all_wrong": 0,
+        "mixed": 0
+      }
+    }
+  },
+  {
+    "step": 2,
+    "rows": 64,
+    "groups": 16,
+    "exact_rate": 0.75,
+    "format_valid_rate": 1.0,
+    "mean_reward": 2.832972582972583,
+    "min_reward": -4.0,
+    "max_reward": 4.0,
+    "gradient_groups": 4,
+    "gradient_group_rate": 0.25,
+    "all_correct": 9,
+    "near_all_correct": 4,
+    "all_wrong": 3,
+    "expected_groups": {
+      "NORMAL": 4,
+      "CYCLE": 4,
+      "FAN_IN": 6,
+      "FAN_OUT": 2
+    },
+    "per_typology": {
+      "CYCLE": {
+        "groups": 4,
+        "exact_rate": 0.6875,
+        "mean_reward": 3.375,
+        "gradient_group_rate": 0.25,
+        "all_correct": 2,
+        "all_wrong": 1,
+        "near_all_correct": 1,
+        "near_all_wrong": 0,
+        "mixed": 0
+      },
+      "FAN_IN": {
+        "groups": 6,
+        "exact_rate": 0.875,
+        "mean_reward": 3.9712602212602213,
+        "gradient_group_rate": 0.5,
+        "all_correct": 3,
+        "all_wrong": 0,
+        "near_all_correct": 3,
+        "near_all_wrong": 0,
+        "mixed": 0
+      },
+      "FAN_OUT": {
+        "groups": 2,
+        "exact_rate": 1.0,
+        "mean_reward": 4.0,
+        "gradient_group_rate": 0.0,
+        "all_correct": 2,
+        "all_wrong": 0,
+        "near_all_correct": 0,
+        "near_all_wrong": 0,
+        "mixed": 0
+      },
+      "NORMAL": {
+        "groups": 4,
+        "exact_rate": 0.5,
+        "mean_reward": 0.0,
+        "gradient_group_rate": 0.0,
+        "all_correct": 2,
+        "all_wrong": 2,
+        "near_all_correct": 0,
+        "near_all_wrong": 0,
+        "mixed": 0
+      }
+    }
+  },
+  {
+    "step": 3,
+    "rows": 64,
+    "groups": 16,
+    "exact_rate": 0.78125,
+    "format_valid_rate": 1.0,
+    "mean_reward": 3.2854888167388165,
+    "min_reward": -4.0,
+    "max_reward": 4.0,
+    "gradient_groups": 5,
+    "gradient_group_rate": 0.3125,
+    "all_correct": 9,
+    "all_wrong": 2,
+    "near_all_correct": 4,
+    "mixed": 1,
+    "expected_groups": {
+      "FAN_OUT": 5,
+      "FAN_IN": 4,
+      "CYCLE": 3,
+      "NORMAL": 4
+    },
+    "per_typology": {
+      "CYCLE": {
+        "groups": 3,
+        "exact_rate": 1.0,
+        "mean_reward": 4.0,
+        "gradient_group_rate": 0.0,
+        "all_correct": 3,
+        "all_wrong": 0,
+        "near_all_correct": 0,
+        "near_all_wrong": 0,
+        "mixed": 0
+      },
+      "FAN_IN": {
+        "groups": 4,
+        "exact_rate": 0.5,
+        "mean_reward": 3.655844155844156,
+        "gradient_group_rate": 0.75,
+        "all_correct": 0,
+        "all_wrong": 1,
+        "near_all_correct": 2,
+        "near_all_wrong": 0,
+        "mixed": 1
+      },
+      "FAN_OUT": {
+        "groups": 5,
+        "exact_rate": 0.95,
+        "mean_reward": 3.9888888888888885,
+        "gradient_group_rate": 0.2,
+        "all_correct": 4,
+        "all_wrong": 0,
+        "near_all_correct": 1,
+        "near_all_wrong": 0,
+        "mixed": 0
+      },
+      "NORMAL": {
+        "groups": 4,
+        "exact_rate": 0.6875,
+        "mean_reward": 1.5,
+        "gradient_group_rate": 0.25,
+        "all_correct": 2,
+        "all_wrong": 1,
+        "near_all_correct": 1,
+        "near_all_wrong": 0,
+        "mixed": 0
+      }
+    }
+  },
+  {
+    "step": 4,
+    "rows": 64,
+    "groups": 16,
+    "exact_rate": 0.890625,
+    "format_valid_rate": 1.0,
+    "mean_reward": 3.4902146464646466,
+    "min_reward": -4.0,
+    "max_reward": 4.0,
+    "gradient_groups": 2,
+    "gradient_group_rate": 0.125,
+    "all_correct": 13,
+    "mixed": 1,
+    "near_all_correct": 1,
+    "all_wrong": 1,
+    "expected_groups": {
+      "NORMAL": 5,
+      "FAN_IN": 3,
+      "FAN_OUT": 4,
+      "CYCLE": 4
+    },
+    "per_typology": {
+      "CYCLE": {
+        "groups": 4,
+        "exact_rate": 1.0,
+        "mean_reward": 4.0,
+        "gradient_group_rate": 0.0,
+        "all_correct": 4,
+        "all_wrong": 0,
+        "near_all_correct": 0,
+        "near_all_wrong": 0,
+        "mixed": 0
+      },
+      "FAN_IN": {
+        "groups": 3,
+        "exact_rate": 0.9166666666666666,
+        "mean_reward": 3.984848484848485,
+        "gradient_group_rate": 0.3333333333333333,
+        "all_correct": 2,
+        "all_wrong": 0,
+        "near_all_correct": 1,
+        "near_all_wrong": 0,
+        "mixed": 0
+      },
+      "FAN_OUT": {
+        "groups": 4,
+        "exact_rate": 0.875,
+        "mean_reward": 3.9722222222222223,
+        "gradient_group_rate": 0.25,
+        "all_correct": 3,
+        "all_wrong": 0,
+        "near_all_correct": 0,
+        "near_all_wrong": 0,
+        "mixed": 1
+      },
+      "NORMAL": {
+        "groups": 5,
+        "exact_rate": 0.8,
+        "mean_reward": 2.4,
+        "gradient_group_rate": 0.0,
+        "all_correct": 4,
+        "all_wrong": 1,
+        "near_all_correct": 0,
+        "near_all_wrong": 0,
+        "mixed": 0
+      }
+    }
+  },
+  {
+    "step": 5,
+    "rows": 64,
+    "groups": 16,
+    "exact_rate": 0.9375,
+    "format_valid_rate": 1.0,
+    "mean_reward": 3.5,
+    "min_reward": -4.0,
+    "max_reward": 4.0,
+    "gradient_groups": 0,
+    "gradient_group_rate": 0.0,
+    "all_correct": 15,
+    "all_wrong": 1,
+    "expected_groups": {
+      "FAN_OUT": 3,
+      "FAN_IN": 6,
+      "CYCLE": 3,
+      "NORMAL": 4
+    },
+    "per_typology": {
+      "CYCLE": {
+        "groups": 3,
+        "exact_rate": 1.0,
+        "mean_reward": 4.0,
+        "gradient_group_rate": 0.0,
+        "all_correct": 3,
+        "all_wrong": 0,
+        "near_all_correct": 0,
+        "near_all_wrong": 0,
+        "mixed": 0
+      },
+      "FAN_IN": {
+        "groups": 6,
+        "exact_rate": 1.0,
+        "mean_reward": 4.0,
+        "gradient_group_rate": 0.0,
+        "all_correct": 6,
+        "all_wrong": 0,
+        "near_all_correct": 0,
+        "near_all_wrong": 0,
+        "mixed": 0
+      },
+      "FAN_OUT": {
+        "groups": 3,
+        "exact_rate": 1.0,
+        "mean_reward": 4.0,
+        "gradient_group_rate": 0.0,
+        "all_correct": 3,
+        "all_wrong": 0,
+        "near_all_correct": 0,
+        "near_all_wrong": 0,
+        "mixed": 0
+      },
+      "NORMAL": {
+        "groups": 4,
+        "exact_rate": 0.75,
+        "mean_reward": 2.0,
+        "gradient_group_rate": 0.0,
+        "all_correct": 3,
+        "all_wrong": 1,
+        "near_all_correct": 0,
+        "near_all_wrong": 0,
+        "mixed": 0
+      }
+    }
+  }
+]

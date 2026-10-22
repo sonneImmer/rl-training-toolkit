@@ -1,0 +1,337 @@
+[
+  {
+    "step": 1,
+    "rows": 64,
+    "groups": 16,
+    "exact_rate": 0.671875,
+    "format_valid_rate": 0.96875,
+    "mean_reward": 3.116809926184926,
+    "min_reward": -4.0,
+    "max_reward": 4.0,
+    "gradient_groups": 7,
+    "gradient_group_rate": 0.4375,
+    "all_wrong": 3,
+    "near_all_correct": 1,
+    "all_correct": 8,
+    "mixed": 4,
+    "expected_groups": {
+      "FAN_IN": 5,
+      "CYCLE": 5,
+      "FAN_OUT": 4,
+      "NORMAL": 2
+    },
+    "per_typology": {
+      "CYCLE": {
+        "groups": 5,
+        "exact_rate": 0.8,
+        "mean_reward": 3.0,
+        "gradient_group_rate": 0.2,
+        "all_correct": 4,
+        "all_wrong": 1,
+        "near_all_correct": 0,
+        "near_all_wrong": 0,
+        "mixed": 0
+      },
+      "FAN_IN": {
+        "groups": 5,
+        "exact_rate": 0.55,
+        "mean_reward": 3.8548174048174046,
+        "gradient_group_rate": 0.8,
+        "all_correct": 1,
+        "all_wrong": 1,
+        "near_all_correct": 1,
+        "near_all_wrong": 0,
+        "mixed": 2
+      },
+      "FAN_OUT": {
+        "groups": 4,
+        "exact_rate": 0.75,
+        "mean_reward": 3.898717948717949,
+        "gradient_group_rate": 0.5,
+        "all_correct": 2,
+        "all_wrong": 0,
+        "near_all_correct": 0,
+        "near_all_wrong": 0,
+        "mixed": 2
+      },
+      "NORMAL": {
+        "groups": 2,
+        "exact_rate": 0.5,
+        "mean_reward": 0.0,
+        "gradient_group_rate": 0.0,
+        "all_correct": 1,
+        "all_wrong": 1,
+        "near_all_correct": 0,
+        "near_all_wrong": 0,
+        "mixed": 0
+      }
+    }
+  },
+  {
+    "step": 2,
+    "rows": 64,
+    "groups": 16,
+    "exact_rate": 0.734375,
+    "format_valid_rate": 1.0,
+    "mean_reward": 3.043425324675325,
+    "min_reward": -4.0,
+    "max_reward": 4.0,
+    "gradient_groups": 5,
+    "gradient_group_rate": 0.3125,
+    "all_correct": 9,
+    "all_wrong": 2,
+    "mixed": 2,
+    "near_all_correct": 2,
+    "near_all_wrong": 1,
+    "expected_groups": {
+      "NORMAL": 4,
+      "CYCLE": 4,
+      "FAN_IN": 6,
+      "FAN_OUT": 2
+    },
+    "per_typology": {
+      "CYCLE": {
+        "groups": 4,
+        "exact_rate": 0.6875,
+        "mean_reward": 3.375,
+        "gradient_group_rate": 0.25,
+        "all_correct": 2,
+        "all_wrong": 1,
+        "near_all_correct": 1,
+        "near_all_wrong": 0,
+        "mixed": 0
+      },
+      "FAN_IN": {
+        "groups": 6,
+        "exact_rate": 0.7916666666666666,
+        "mean_reward": 3.9491341991341993,
+        "gradient_group_rate": 0.3333333333333333,
+        "all_correct": 4,
+        "all_wrong": 0,
+        "near_all_correct": 0,
+        "near_all_wrong": 1,
+        "mixed": 1
+      },
+      "FAN_OUT": {
+        "groups": 2,
+        "exact_rate": 0.875,
+        "mean_reward": 3.75,
+        "gradient_group_rate": 0.5,
+        "all_correct": 1,
+        "all_wrong": 0,
+        "near_all_correct": 1,
+        "near_all_wrong": 0,
+        "mixed": 0
+      },
+      "NORMAL": {
+        "groups": 4,
+        "exact_rate": 0.625,
+        "mean_reward": 1.0,
+        "gradient_group_rate": 0.25,
+        "all_correct": 2,
+        "all_wrong": 1,
+        "near_all_correct": 0,
+        "near_all_wrong": 0,
+        "mixed": 1
+      }
+    }
+  },
+  {
+    "step": 3,
+    "rows": 64,
+    "groups": 16,
+    "exact_rate": 0.8125,
+    "format_valid_rate": 1.0,
+    "mean_reward": 3.470779220779221,
+    "min_reward": -4.0,
+    "max_reward": 4.0,
+    "gradient_groups": 0,
+    "gradient_group_rate": 0.0,
+    "all_correct": 13,
+    "all_wrong": 3,
+    "expected_groups": {
+      "FAN_OUT": 5,
+      "FAN_IN": 4,
+      "CYCLE": 3,
+      "NORMAL": 4
+    },
+    "per_typology": {
+      "CYCLE": {
+        "groups": 3,
+        "exact_rate": 1.0,
+        "mean_reward": 4.0,
+        "gradient_group_rate": 0.0,
+        "all_correct": 3,
+        "all_wrong": 0,
+        "near_all_correct": 0,
+        "near_all_wrong": 0,
+        "mixed": 0
+      },
+      "FAN_IN": {
+        "groups": 4,
+        "exact_rate": 0.5,
+        "mean_reward": 3.883116883116883,
+        "gradient_group_rate": 0.0,
+        "all_correct": 2,
+        "all_wrong": 2,
+        "near_all_correct": 0,
+        "near_all_wrong": 0,
+        "mixed": 0
+      },
+      "FAN_OUT": {
+        "groups": 5,
+        "exact_rate": 1.0,
+        "mean_reward": 4.0,
+        "gradient_group_rate": 0.0,
+        "all_correct": 5,
+        "all_wrong": 0,
+        "near_all_correct": 0,
+        "near_all_wrong": 0,
+        "mixed": 0
+      },
+      "NORMAL": {
+        "groups": 4,
+        "exact_rate": 0.75,
+        "mean_reward": 2.0,
+        "gradient_group_rate": 0.0,
+        "all_correct": 3,
+        "all_wrong": 1,
+        "near_all_correct": 0,
+        "near_all_wrong": 0,
+        "mixed": 0
+      }
+    }
+  },
+  {
+    "step": 4,
+    "rows": 64,
+    "groups": 16,
+    "exact_rate": 0.96875,
+    "format_valid_rate": 1.0,
+    "mean_reward": 3.75,
+    "min_reward": -4.0,
+    "max_reward": 4.0,
+    "gradient_groups": 1,
+    "gradient_group_rate": 0.0625,
+    "all_correct": 15,
+    "mixed": 1,
+    "expected_groups": {
+      "NORMAL": 5,
+      "FAN_IN": 3,
+      "FAN_OUT": 4,
+      "CYCLE": 4
+    },
+    "per_typology": {
+      "CYCLE": {
+        "groups": 4,
+        "exact_rate": 1.0,
+        "mean_reward": 4.0,
+        "gradient_group_rate": 0.0,
+        "all_correct": 4,
+        "all_wrong": 0,
+        "near_all_correct": 0,
+        "near_all_wrong": 0,
+        "mixed": 0
+      },
+      "FAN_IN": {
+        "groups": 3,
+        "exact_rate": 1.0,
+        "mean_reward": 4.0,
+        "gradient_group_rate": 0.0,
+        "all_correct": 3,
+        "all_wrong": 0,
+        "near_all_correct": 0,
+        "near_all_wrong": 0,
+        "mixed": 0
+      },
+      "FAN_OUT": {
+        "groups": 4,
+        "exact_rate": 1.0,
+        "mean_reward": 4.0,
+        "gradient_group_rate": 0.0,
+        "all_correct": 4,
+        "all_wrong": 0,
+        "near_all_correct": 0,
+        "near_all_wrong": 0,
+        "mixed": 0
+      },
+      "NORMAL": {
+        "groups": 5,
+        "exact_rate": 0.9,
+        "mean_reward": 3.2,
+        "gradient_group_rate": 0.2,
+        "all_correct": 4,
+        "all_wrong": 0,
+        "near_all_correct": 0,
+        "near_all_wrong": 0,
+        "mixed": 1
+      }
+    }
+  },
+  {
+    "step": 5,
+    "rows": 64,
+    "groups": 16,
+    "exact_rate": 0.9375,
+    "format_valid_rate": 1.0,
+    "mean_reward": 3.5,
+    "min_reward": -4.0,
+    "max_reward": 4.0,
+    "gradient_groups": 0,
+    "gradient_group_rate": 0.0,
+    "all_correct": 15,
+    "all_wrong": 1,
+    "expected_groups": {
+      "FAN_OUT": 3,
+      "FAN_IN": 6,
+      "CYCLE": 3,
+      "NORMAL": 4
+    },
+    "per_typology": {
+      "CYCLE": {
+        "groups": 3,
+        "exact_rate": 1.0,
+        "mean_reward": 4.0,
+        "gradient_group_rate": 0.0,
+        "all_correct": 3,
+        "all_wrong": 0,
+        "near_all_correct": 0,
+        "near_all_wrong": 0,
+        "mixed": 0
+      },
+      "FAN_IN": {
+        "groups": 6,
+        "exact_rate": 1.0,
+        "mean_reward": 4.0,
+        "gradient_group_rate": 0.0,
+        "all_correct": 6,
+        "all_wrong": 0,
+        "near_all_correct": 0,
+        "near_all_wrong": 0,
+        "mixed": 0
+      },
+      "FAN_OUT": {
+        "groups": 3,
+        "exact_rate": 1.0,
+        "mean_reward": 4.0,
+        "gradient_group_rate": 0.0,
+        "all_correct": 3,
+        "all_wrong": 0,
+        "near_all_correct": 0,
+        "near_all_wrong": 0,
+        "mixed": 0
+      },
+      "NORMAL": {
+        "groups": 4,
+        "exact_rate": 0.75,
+        "mean_reward": 2.0,
+        "gradient_group_rate": 0.0,
+        "all_correct": 3,
+        "all_wrong": 1,
+        "near_all_correct": 0,
+        "near_all_wrong": 0,
+        "mixed": 0
+      }
+    }
+  }
+]
