@@ -24,6 +24,21 @@ python3 -m pip install -e '.[dev]'
 pytest -q
 ```
 
+## Rollout 证据补丁
+
+新训练在启动 VERL 前应用 rollout 证据补丁，可为 GRPO 和 NGRPO 同时保存 `uid`、算法名以及每条 Response 的序列级 `advantage`：
+
+```bash
+python3 patch_tools/patch_verl_rollout_evidence.py apply \
+  --verl-root /workspace/verl \
+  --backup-dir /workspace/verl_rollout_evidence_backup
+
+python3 patch_tools/patch_verl_rollout_evidence.py check \
+  --verl-root /workspace/verl
+```
+
+`advantage` 是进入 Policy Loss 的相对学习方向，不等同于该 Group 的实际梯度。历史 rollout 没有该字段时，UI 显示“未记录”，不会根据 Reward 反推。仓库中的 RL 启动脚本已经自动应用此补丁。
+
 ## NGRPO 运行时补丁
 
 对于 `openpangu-72b-2512-postrain:v1`，推荐直接应用基于该镜像原始 VERL 文件生成的完整补丁：
@@ -82,6 +97,8 @@ rl-diagnostics analyze \
 ## 实验对象与前端看板
 
 正式看板将每个包含 `train.log` 的运行目录视为一个实验对象。训练过程中定时更新，结束后保留最终快照、标签事件和产物路径。状态目录应放在 Git 仓库之外：
+
+稳定性规则分为两级：少于正式窗口但已有至少 3 个 step 时显示“早期正常/早期预警（低置信度）”；达到规则要求的基线和观察窗口后，自动切换为正式判断。用户读取 Rollout 证据时，后台仍继续采集，但前端不会自动重建当前详情；手动点击“刷新”可恢复最新详情。
 
 ```bash
 rl-dashboard \

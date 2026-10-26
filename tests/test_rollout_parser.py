@@ -154,6 +154,24 @@ class TestParseRolloutDir:
         assert rollouts[0].verifier_correct is True
         assert rollouts[0].prediction == "4"
 
+    def test_advantage_evidence_extraction(self, tmp_path):
+        rollout_dir = tmp_path / "rollouts"
+        rollout_dir.mkdir()
+        records = [
+            {"input": "question", "output": "a", "score": 1.0, "advantage": 0.75,
+             "adv_estimator": "grpo", "uid": "group-1"},
+            {"input": "question", "output": "b", "score": 0.0, "advantage": -0.75,
+             "adv_estimator": "grpo", "uid": "group-1"},
+        ]
+        (rollout_dir / "1.jsonl").write_text("\n".join(json.dumps(record) for record in records))
+
+        rollouts, groups, _ = parse_rollout_dir(str(rollout_dir), EXP_ID)
+
+        assert [item.advantage for item in rollouts] == [0.75, -0.75]
+        assert rollouts[0].advantage_estimator == "grpo"
+        assert groups[0].advantages == [0.75, -0.75]
+        assert groups[0].advantage_estimator == "grpo"
+
     def test_content_fingerprint_deterministic(self):
         """Content fingerprint should be deterministic."""
         fp1 = content_fingerprint("hello world")

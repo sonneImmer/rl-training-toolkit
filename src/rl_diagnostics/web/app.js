@@ -1,5 +1,6 @@
 const state = {
   experiments: [],
+  rolloutReading: false,
   selectedId: null,
   detail: null,
   rolloutEvidence: null,
@@ -27,6 +28,44 @@ function percent(value) {
 function number(value, digits = 4) {
   return value === null || value === undefined ? "-" : Number(value).toFixed(digits);
 }
+function advantageDirection(value) {
+  if (value === null || value === undefined) return "未记录";
+  const numeric = Number(value);
+  if (Math.abs(numeric) < 1e-8) return "零信号";
+  return numeric > 0 ? "正向强化" : "负向抑制";
+}
+
+function groupRollouts(records) {
+  const groups = new Map();
+  records.forEach((record, index) => {
+    const groupId = String(record.uid ?? record.group_id ?? record.input ?? record.prompt ?? `unknown-${index}`);
+    const group = groups.get(groupId) || { records: [] };
+    group.records.push(record);
+    groups.set(groupId, group);
+  });
+  return [...groups.values()];
+}
+
+function rolloutGroupsHtml(records) {
+  return groupRollouts(records).map((group, groupIndex) => {
+    const advantages = group.records
+      .map((record) => record.advantage)
+      .filter((value) => value !== null && value !== undefined)
+      .map(Number);
+    const positive = advantages.filter((value) => value > 1e-8).length;
+    const negative = advantages.filter((value) => value < -1e-8).length;
+    const zero = advantages.length - positive - negative;
+    const signal = advantages.length ? `正 ${positive} · 负 ${negative} · 零 ${zero}` : "Advantage 未记录";
+    return `<details class="rollout-group">
+      <summary><strong>Group #${groupIndex + 1}</strong><span>${group.records.length} responses</span><span>${signal}</span></summary>
+      <div class="rollout-group-body">${group.records.map((record, index) => `<details class="rollout-item">
+        <summary><strong>#${index + 1}</strong><span>reward ${escapeHtml(record.score ?? record.reward ?? "-")}</span><span>adv ${escapeHtml(record.advantage ?? "-")}</span><span>${escapeHtml(advantageDirection(record.advantage))}</span><span>acc ${escapeHtml(record.acc ?? "-")}</span><span>pred ${escapeHtml(record.pred ?? "-")}</span></summary>
+        <pre>${escapeHtml(`PROMPT\n${record.input ?? record.prompt ?? ""}\n\nOUTPUT\n${record.output ?? record.response ?? ""}`)}</pre>
+      </details>`).join("")}</div>
+    </details>`;
+  }).join("");
+}
+
 
 function compact(value) {
   if (!value) return "-";
@@ -56,7 +95,8 @@ async function loadExperiments(force = false) {
     renderList();
     if (!state.selectedId && state.experiments.length) {
       await selectExperiment(state.experiments[0].experiment_id);
-    } else if (state.selectedId) {
+    } else if (state.selectedId && (!state.rolloutReading || force)) {
+      if (force) state.rolloutReading = false;
       await selectExperiment(state.selectedId, false, detailState);
     }
   } catch (error) {
@@ -133,7 +173,10 @@ function restoreDetailState(detailState) {
 async function selectExperiment(experimentId, scroll = true, detailState = null) {
   const changed = state.selectedId !== experimentId;
   state.selectedId = experimentId;
-  if (changed) state.rolloutEvidence = null;
+  if (changed) {
+    state.rolloutEvidence = null;
+    state.rolloutReading = false;
+  }
   renderList();
   try {
     state.detail = await fetchJson(`/api/experiments/${encodeURIComponent(experimentId)}`);
@@ -181,7 +224,7 @@ function readinessHtml(item) {
 }
 
 function ruleStatusHtml(item) {
-  const names = { triggered: "已触发", not_triggered: "未触发", not_evaluated: "未评估" };
+  const names = { triggered: "已触发", not_triggered: "未触发", not_evaluated: "未评估", early_observation: "早期正常", early_warning: "早期预警" };
   const ruleNames = {
     explore_collapse: "探索能力收缩", kl_drift: "KL 漂移", clip_saturation: "裁剪饱和",
     gradient_spike: "梯度尖峰", output_truncation: "输出截断", reward_signal_degradation: "奖励信号退化",
@@ -197,6 +240,7 @@ function ruleStatusHtml(item) {
     item.window_size !== undefined ? `窗口大小：${item.window_size}` : "",
     item.baseline_window !== undefined ? `基线长度：${item.baseline_window}` : "",
     item.window_steps?.length ? `证据 step：${item.window_steps.join(", ")}` : "",
+    item.confidence === "low" ? "置信度：低（短实验，仅供观察）" : "",
   ].filter(Boolean);
   return `<details class="rule-row ${escapeHtml(item.status)}"><summary><strong>${escapeHtml(ruleNames[item.rule_name] || item.rule_name)}</strong><span>${escapeHtml(names[item.status] || item.status)}</span><small>${escapeHtml(item.reason || item.description || "点击展开详情")}</small></summary><div class="rule-detail">${detail.map((line) => `<div>${escapeHtml(line)}</div>`).join("") || "暂无更多信息"}</div></details>`;
 }
@@ -446,15 +490,15 @@ function drawComparisonChart(series, metric) {
 }
 
 async function loadRollouts() {
+  state.rolloutReading = true;
   const step = el("rolloutStep").value;
   const content = el("rolloutContent");
   content.textContent = "正在读取...";
   try {
-    const records = await fetchJson(`/api/experiments/${encodeURIComponent(state.selectedId)}/rollouts?step=${encodeURIComponent(step)}&limit=24`);
-    content.innerHTML = records.length ? `<div class="rollout-list">${records.map((record, index) => `<details class="rollout-item">
-      <summary><strong>#${index + 1}</strong><span>reward ${escapeHtml(record.score ?? record.reward ?? "-")}</span><span>acc ${escapeHtml(record.acc ?? "-")}</span><span>pred ${escapeHtml(record.pred ?? "-")}</span></summary>
-      <pre>${escapeHtml(`PROMPT\n${record.input ?? record.prompt ?? ""}\n\nOUTPUT\n${record.output ?? record.response ?? ""}`)}</pre>
-    </details>`).join("")}</div>` : '<span class="no-labels">该 step 没有可读取的 rollout。</span>';
+    const records = await fetchJson(`/api/experiments/${encodeURIComponent(state.selectedId)}/rollouts?step=${encodeURIComponent(step)}&limit=100`);
+    content.innerHTML = records.length
+      ? `<div class="rollout-list">${rolloutGroupsHtml(records)}</div>`
+      : '<span class="no-labels">该 step 没有可读取的 rollout。</span>';
     state.rolloutEvidence = captureDetailState();
   } catch (error) {
     content.innerHTML = `<span class="no-labels">读取失败：${escapeHtml(error.message)}</span>`;

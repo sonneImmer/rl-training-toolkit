@@ -35,4 +35,4 @@ exec docker run -d \
   -e HCCL_WHITELIST_DISABLE=1 -e HCCL_SOCKET_IFNAME="$HCCL_INTERFACE" -e HCCL_CONNECT_TIMEOUT=600 \
   -e MODEL_PATH=/mnt/model -e DATA_DIR=/mnt/data -e RUN_ROOT=/mnt/runs/finqa-grpo-$(date +%Y%m%d) \
   -e IMAGE_NAME="$IMAGE" -e CODE_REVISION="$CODE_REVISION" -e RANDOM_SEED="${RANDOM_SEED:-42}" \
-  "$IMAGE" bash -lc 'if [[ "$ADV_ESTIMATOR" == "ngrpo" ]]; then python3 /mnt/patch_tools/patch_verl_ngrpo.py apply --verl-root /workspace/verl --backup-dir /tmp/verl_ngrpo_backup && python3 /mnt/patch_tools/patch_verl_ngrpo.py check --verl-root /workspace/verl; fi; exec bash /mnt/tools/run_finqa_grpo.sh'
+  "$IMAGE" bash -lc 'python3 /mnt/patch_tools/patch_verl_rollout_evidence.py apply --verl-root /workspace/verl --backup-dir /tmp/verl_rollout_evidence_backup && python3 /mnt/patch_tools/patch_verl_rollout_evidence.py check --verl-root /workspace/verl; if [[ "$ADV_ESTIMATOR" == "ngrpo" ]]; then python3 /mnt/patch_tools/patch_verl_ngrpo.py apply --verl-root /workspace/verl --backup-dir /tmp/verl_ngrpo_backup && python3 /mnt/patch_tools/patch_verl_ngrpo.py check --verl-root /workspace/verl; fi; exec bash /mnt/tools/run_finqa_grpo.sh'

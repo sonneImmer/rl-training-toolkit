@@ -1,6 +1,6 @@
---- a/verl/trainer/ppo/ray_trainer.py	2026-10-10 11:46:17.504000000 +0800
-+++ b/verl/trainer/ppo/ray_trainer.py	2026-10-10 11:46:17.516000000 +0800
-@@ -524,6 +524,7 @@
+--- a/verl/trainer/ppo/ray_trainer.py
++++ b/verl/trainer/ppo/ray_trainer.py
+@@ -449,6 +449,7 @@
              "gts": gts,
              "score": scores,
              "step": [self.global_steps] * n,
@@ -8,7 +8,7 @@
          }
  
          for k, v in reward_extra_infos_dict.items():
-@@ -541,7 +542,7 @@
+@@ -466,7 +467,7 @@
          print(f"Dumped generations to {filename}")
  
      def _log_rollout_data(
@@ -17,8 +17,14 @@
      ):
          """Log rollout data to disk.
          Args:
-@@ -556,7 +557,13 @@
+@@ -479,9 +480,21 @@
+             inputs = self.tokenizer.batch_decode(batch.batch["prompts"], skip_special_tokens=True)
+             outputs = self.tokenizer.batch_decode(batch.batch["responses"], skip_special_tokens=True)
              scores = batch.batch["token_level_scores"].sum(-1).cpu().tolist()
++            advantages = (
++                (batch.batch["advantages"] * batch.batch["response_mask"]).sum(-1)
++                / batch.batch["response_mask"].sum(-1).clamp_min(1)
++            ).detach().cpu().tolist()
              sample_gts = [item.non_tensor_batch.get("reward_model", {}).get("ground_truth", None) for item in batch]
  
 +            # Extract diagnostic metadata for group recovery
@@ -28,6 +34,8 @@
              reward_extra_infos_to_dump = reward_extra_infos_dict.copy()
 +            reward_extra_infos_to_dump["uid"] = uid_list
 +            reward_extra_infos_to_dump["data_source"] = data_source_list
++            reward_extra_infos_to_dump["advantage"] = advantages
++            reward_extra_infos_to_dump["adv_estimator"] = [str(self.config.algorithm.adv_estimator)] * len(inputs)
              if "request_id" in batch.non_tensor_batch:
                  reward_extra_infos_dict.setdefault(
                      "request_id",

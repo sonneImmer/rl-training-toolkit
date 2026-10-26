@@ -192,6 +192,8 @@ button { cursor: pointer; }
 .rule-row.triggered { border-color: var(--critical); background: var(--critical-soft); }
 .rule-row.not_triggered { border-color: var(--accent); background: var(--accent-soft); }
 .rule-row.not_evaluated { border-color: var(--warning); background: var(--warning-soft); }
+.rule-row.early_observation { border-color: var(--info); background: var(--info-soft); }
+.rule-row.early_warning { border-color: var(--warning); background: var(--warning-soft); }
 
 .comparison-controls { display: grid; gap: 14px; }
 .comparison-picker { display: flex; gap: 8px; }
@@ -209,6 +211,9 @@ button { cursor: pointer; }
 .rollout-toolbar input { width: 90px; height: 30px; border: 1px solid var(--line-strong); border-radius: 4px; padding: 0 8px; }
 .rollout-toolbar button { height: 30px; border: 1px solid var(--line-strong); border-radius: 4px; background: #fff; }
 .rollout-list { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); }
+.rollout-group { background: #fff; }
+.rollout-group > summary { display: flex; gap: 14px; padding: 10px 12px; cursor: pointer; border-bottom: 1px solid var(--line); font-size: 12px; }
+.rollout-group-body { border-left: 3px solid var(--info); }
 .rollout-item { background: #fff; }
 .rollout-item summary { display: flex; gap: 12px; padding: 10px 12px; cursor: pointer; font-size: 12px; }
 .rollout-item pre { margin: 0; padding: 12px; max-height: 340px; overflow: auto; white-space: pre-wrap; border-top: 1px solid var(--line); background: #f8f9fb; font: 12px/1.55 ui-monospace, SFMono-Regular, Consolas, monospace; }

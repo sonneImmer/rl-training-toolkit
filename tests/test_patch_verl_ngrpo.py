@@ -50,3 +50,31 @@ def test_partial_old_install_is_accepted(tmp_path):
 
     MODULE.apply_patch(root, backup)
     MODULE.check(root)
+
+
+def test_rollout_evidence_patcher_records_advantage(tmp_path):
+    script = Path(__file__).parents[1] / "patch_tools" / "patch_verl_rollout_evidence.py"
+    spec = importlib.util.spec_from_file_location("patch_verl_rollout_evidence", script)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+
+    root = tmp_path / "verl-root"
+    path = root / "verl/trainer/ppo/ray_trainer.py"
+    path.parent.mkdir(parents=True)
+    path.write_text(
+        '            "score": scores,\n'
+        '            "step": [self.global_steps] * n,\n'
+        '            "rollout_id": list(range(n)),\n'
+        '            scores = batch.batch["token_level_scores"].sum(-1).cpu().tolist()\n'
+        '            reward_extra_infos_to_dump = reward_extra_infos_dict.copy()\n'
+        '            reward_extra_infos_to_dump["uid"] = uid_list\n'
+        '            reward_extra_infos_to_dump["data_source"] = data_source_list\n'
+    )
+    backup = tmp_path / "backup"
+
+    module.apply_patch(root, backup)
+    module.check(root)
+    patched = path.read_text()
+    assert 'reward_extra_infos_to_dump["advantage"] = advantages' in patched
+    assert 'batch.batch["advantages"]' in patched

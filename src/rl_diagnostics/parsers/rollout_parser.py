@@ -53,6 +53,14 @@ def _extract_reward(record: dict[str, Any], idx: int = 0) -> Optional[float]:
     return None
 
 
+def _extract_advantage(record: dict[str, Any], idx: int = 0) -> Optional[float]:
+    """Extract a sequence-level advantage when the trainer dumped one."""
+    val = record.get("advantage")
+    if isinstance(val, list):
+        val = val[idx] if idx < len(val) else None
+    return float(val) if _is_finite_number(val) else None
+
+
 def _extract_str_field(record: dict[str, Any], keys: list[str], idx: int = 0) -> Optional[str]:
     """Extract a string field from a record, handling scalar and array forms."""
     for key in keys:
@@ -133,18 +141,21 @@ def _parse_single_record(
     group_id: str,
     source_file: str,
     source_line: int,
+    record_idx: int = 0,
 ) -> RolloutRecord:
     """Parse a single JSONL record into a RolloutRecord."""
     # Extract fields
-    prompt = _extract_str_field(record, ["input", "prompt"])
-    response = _extract_str_field(record, ["output", "response"])
-    reward = _extract_reward(record)
-    prediction = _extract_str_field(record, ["pred", "prediction"])
-    verifier_correct = _extract_bool_field(record, ["acc", "correct", "is_correct"])
-    ground_truth = _extract_str_field(record, ["gts", "ground_truth"])
-    difficulty = _extract_str_field(record, ["difficulty"])
-    source_dataset = _extract_str_field(record, ["data_source", "source_dataset"])
-    finish_reason = _extract_str_field(record, ["finish_reason"])
+    prompt = _extract_str_field(record, ["input", "prompt"], record_idx)
+    response = _extract_str_field(record, ["output", "response"], record_idx)
+    reward = _extract_reward(record, record_idx)
+    advantage = _extract_advantage(record, record_idx)
+    advantage_estimator = _extract_str_field(record, ["adv_estimator", "advantage_estimator"], record_idx)
+    prediction = _extract_str_field(record, ["pred", "prediction"], record_idx)
+    verifier_correct = _extract_bool_field(record, ["acc", "correct", "is_correct"], record_idx)
+    ground_truth = _extract_str_field(record, ["gts", "ground_truth"], record_idx)
+    difficulty = _extract_str_field(record, ["difficulty"], record_idx)
+    source_dataset = _extract_str_field(record, ["data_source", "source_dataset"], record_idx)
+    finish_reason = _extract_str_field(record, ["finish_reason"], record_idx)
     
     # Prompt ID
     prompt_id = _extract_str_field(record, ["prompt_id", "data_id", "id"])
@@ -202,6 +213,8 @@ def _parse_single_record(
         response=response,
         training_reward=reward,
         reward_source="training",
+        advantage=advantage,
+        advantage_estimator=advantage_estimator,
         prediction=prediction,
         verifier_correct=verifier_correct,
         ground_truth=ground_truth,
@@ -345,6 +358,7 @@ def parse_rollout_dir(
                             group_id=str(group_id),
                             source_file=filepath,
                             source_line=line_idx,
+                            record_idx=arr_idx,
                         )
                         arr_rollout.response = str(responses[arr_idx]) if arr_idx < len(responses) else None
                         arr_rollout.prediction = _extract_str_field(record, ["pred", "prediction"], arr_idx)
@@ -368,6 +382,7 @@ def parse_rollout_dir(
         # Build group records
         for gid, rollouts in group_data.items():
             rewards = [r.training_reward for r in rollouts if r.training_reward is not None]
+            advantages = [r.advantage for r in rollouts]
             responses = [r.response for r in rollouts]
             rollout_ids = [r.rollout_id for r in rollouts]
             
@@ -387,6 +402,8 @@ def parse_rollout_dir(
                 ground_truth=first.ground_truth if first else None,
                 rollout_count=len(rollouts),
                 rewards=rewards,
+                advantages=advantages,
+                advantage_estimator=first.advantage_estimator if first else None,
                 responses=responses,
                 rollout_ids=rollout_ids,
                 source_file=filepath,

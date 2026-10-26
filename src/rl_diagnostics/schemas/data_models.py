@@ -97,6 +97,8 @@ class RolloutRecord:
     response: Optional[str] = None
     training_reward: Optional[float] = None
     reward_source: str = "training"
+    advantage: Optional[float] = None
+    advantage_estimator: Optional[str] = None
     prediction: Optional[str] = None
     verifier_correct: Optional[bool] = None
     ground_truth: Optional[str] = None
@@ -131,6 +133,8 @@ class GroupRecord:
     ground_truth: Optional[str]
     rollout_count: int = 0
     rewards: list[float] = field(default_factory=list)
+    advantages: list[Optional[float]] = field(default_factory=list)
+    advantage_estimator: Optional[str] = None
     responses: list[Optional[str]] = field(default_factory=list)
     rollout_ids: list[int] = field(default_factory=list)
     source_file: str = ""

@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import re
+import statistics
 import tempfile
 import time
 from collections import Counter
@@ -206,6 +207,67 @@ class ExperimentStore:
         }
 
     @staticmethod
+    def _early_stability_observation(rule_name: str, rule_config, metrics: list, step_aggs: list) -> Optional[dict]:
+        if rule_name == "reward_signal_degradation":
+            if len(step_aggs) < 3:
+                return None
+            tail = step_aggs[-3:]
+            observed = statistics.median(item.low_information_group_ratio for item in tail)
+            return {
+                "triggered": observed > rule_config.threshold,
+                "metric_name": "low_information_group_ratio",
+                "observed_value": observed,
+                "baseline_value": 0.0,
+                "window_steps": [item.step for item in tail],
+            }
+
+        names = rule_config.extra.get("metric_names", [])
+        candidates = []
+        for name in names:
+            series = sorted(
+                ((item.step, item.metric_value) for item in metrics
+                 if item.phase == "train" and item.metric_name == name),
+                key=lambda pair: pair[0],
+            )
+            if series:
+                candidates.append((len(series), name, series))
+        if not candidates:
+            return None
+        _, metric_name, series = max(candidates, key=lambda item: item[0])
+        if len(series) < 3:
+            return None
+
+        tail = series[-min(3, len(series)):]
+        baseline_pairs = series[:-len(tail)] or series[:1]
+        baseline = statistics.median(value for _, value in baseline_pairs)
+        observed = statistics.median(value for _, value in tail)
+        triggered = False
+        if rule_name in ("clip_saturation", "output_truncation"):
+            triggered = observed > rule_config.threshold
+        elif rule_name == "explore_collapse" and abs(baseline) > 1e-12:
+            triggered = (baseline - observed) / abs(baseline) > rule_config.threshold
+        elif rule_name == "kl_drift" and abs(baseline) > 1e-12:
+            triggered = abs(observed) / abs(baseline) > rule_config.threshold
+        elif rule_name == "performance_degradation" and abs(baseline) > 1e-12:
+            triggered = (baseline - observed) / abs(baseline) > rule_config.threshold
+        elif rule_name == "gradient_spike":
+            prior = [value for _, value in series[:-1]]
+            center = statistics.median(prior)
+            mad = statistics.median(abs(value - center) for value in prior)
+            effective_mad = mad if mad > 0 else abs(center) * 1e-6 + 1e-12
+            observed = series[-1][1]
+            baseline = center
+            triggered = observed > center + rule_config.threshold * effective_mad
+
+        return {
+            "triggered": triggered,
+            "metric_name": metric_name,
+            "observed_value": observed,
+            "baseline_value": baseline,
+            "window_steps": [step for step, _ in tail],
+        }
+
+    @staticmethod
     def _stability_payload(metrics: list, step_aggs: list) -> dict:
         config = StabilityConfig()
         report = run_stability_diagnosis(metrics, step_aggs, config)
@@ -236,24 +298,36 @@ class ExperimentStore:
                     minimum = rule_config.window_size * rule_config.min_windows
                 elif rule_name == "kl_drift":
                     minimum = rule_config.baseline_window + rule_config.window_size * rule_config.min_windows
+            early = None
             if not rule_config.enabled:
                 status, reason = "not_evaluated", "rule_disabled"
             elif not available:
                 status, reason = "not_evaluated", "required_metric_missing"
             elif sample_count < minimum:
-                status, reason = "not_evaluated", f"insufficient_samples:{sample_count}/{minimum}"
+                early = ExperimentStore._early_stability_observation(
+                    rule_name, rule_config, metrics, step_aggs,
+                )
+                if early is not None:
+                    status = "early_warning" if early["triggered"] else "early_observation"
+                    reason = f"early_window:{sample_count}/{minimum}"
+                else:
+                    status, reason = "not_evaluated", f"insufficient_samples:{sample_count}/{minimum}"
             else:
                 status, reason = "not_triggered", "threshold_not_reached"
-            evaluations.append({
+            evaluation = {
                 "rule_name": rule_name,
                 "status": status,
                 "reason": reason,
-                "severity": "info",
+                "severity": "warning" if status == "early_warning" else "info",
+                "confidence": "low" if status.startswith("early_") else "standard",
                 "threshold": rule_config.threshold,
                 "window_size": rule_config.window_size,
                 "baseline_window": rule_config.baseline_window,
                 "config_version": config.config_version,
-            })
+            }
+            if early is not None:
+                evaluation.update({key: value for key, value in early.items() if key != "triggered"})
+            evaluations.append(evaluation)
         payload = report.to_dict()
         payload["evaluations"] = evaluations
         payload["rule_config"] = config.to_dict()

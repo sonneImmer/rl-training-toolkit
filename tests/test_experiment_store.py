@@ -74,6 +74,23 @@ def test_standard_diagnostics_are_persisted(tmp_path):
     assert any(item["status"] == "not_evaluated" for item in evaluations)
 
 
+
+def test_short_experiment_gets_low_confidence_early_observations(tmp_path):
+    run_dir = tmp_path / "runs" / "run-early"
+    run_dir.mkdir(parents=True)
+    (run_dir / "train.log").write_text("\n".join([
+        "step:1 - actor/entropy:1.0 - actor/kl_loss:0.01 - actor/grad_norm:1.0",
+        "step:2 - actor/entropy:0.9 - actor/kl_loss:0.02 - actor/grad_norm:1.1",
+        "step:3 - actor/entropy:0.8 - actor/kl_loss:0.03 - actor/grad_norm:1.2",
+    ]))
+
+    snapshot = ExperimentStore(tmp_path / "runs", tmp_path / "state").refresh_all()[0]
+
+    evaluations = snapshot["diagnostics"]["stability"]["evaluations"]
+    early = [item for item in evaluations if item["status"].startswith("early_")]
+    assert early
+    assert all(item["confidence"] == "low" for item in early)
+    assert all(item["window_steps"] for item in early)
 def test_experiment_comparison_reports_parameter_changes(tmp_path):
     runs_root = tmp_path / "runs"
     for name, algorithm, learning_rate, reward in (
