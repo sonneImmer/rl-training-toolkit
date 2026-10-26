@@ -2,6 +2,7 @@ const state = {
   experiments: [],
   selectedId: null,
   detail: null,
+  rolloutEvidence: null,
   timer: null,
 };
 
@@ -48,6 +49,7 @@ async function fetchJson(url) {
 
 async function loadExperiments(force = false) {
   try {
+    const detailState = captureDetailState();
     if (force) await fetchJson("/api/refresh");
     state.experiments = await fetchJson("/api/experiments");
     el("connectionStatus").textContent = `已连接 · ${new Date().toLocaleTimeString("zh-CN", { hour12: false })}`;
@@ -55,7 +57,7 @@ async function loadExperiments(force = false) {
     if (!state.selectedId && state.experiments.length) {
       await selectExperiment(state.experiments[0].experiment_id);
     } else if (state.selectedId) {
-      await selectExperiment(state.selectedId, false);
+      await selectExperiment(state.selectedId, false, detailState);
     }
   } catch (error) {
     el("connectionStatus").textContent = `连接失败 · ${error.message}`;
@@ -103,12 +105,40 @@ function renderList() {
   });
 }
 
-async function selectExperiment(experimentId, scroll = true) {
+function captureDetailState() {
+  if (!state.selectedId) return null;
+  const content = el("rolloutContent");
+  const step = el("rolloutStep");
+  if (!content || !step) return state.rolloutEvidence;
+  return {
+    rolloutStep: step.value,
+    rolloutHtml: content.innerHTML,
+    rolloutOpen: [...content.querySelectorAll("details")].map((item) => item.open),
+  };
+}
+
+function restoreDetailState(detailState) {
+  if (!detailState || !el("rolloutContent")) return;
+  const content = el("rolloutContent");
+  const step = el("rolloutStep");
+  if (detailState.rolloutHtml && detailState.rolloutHtml !== '<span class="no-labels">选择 step 查看 prompt、输出、reward、pred 和 acc。</span>') {
+    content.innerHTML = detailState.rolloutHtml;
+    step.value = detailState.rolloutStep || step.value;
+    [...content.querySelectorAll("details")].forEach((item, index) => {
+      item.open = Boolean(detailState.rolloutOpen?.[index]);
+    });
+  }
+}
+
+async function selectExperiment(experimentId, scroll = true, detailState = null) {
+  const changed = state.selectedId !== experimentId;
   state.selectedId = experimentId;
+  if (changed) state.rolloutEvidence = null;
   renderList();
   try {
     state.detail = await fetchJson(`/api/experiments/${encodeURIComponent(experimentId)}`);
     renderDetail();
+    restoreDetailState(changed ? null : detailState);
     if (scroll) el("detail").scrollTop = 0;
   } catch (error) {
     el("detail").innerHTML = `<section class="empty-state"><h2>读取失败</h2><p>${escapeHtml(error.message)}</p></section>`;
@@ -202,7 +232,7 @@ function renderDetail() {
       ${metricItem("有效回答", percent(latest.valid_ratio))}
       ${metricItem("正奖励", percent(latest.positive_ratio))}
       ${metricItem("截断率", percent(latest.clip_ratio))}
-      ${metricItem("Gradient Norm", number(latest.grad_norm, 4))}
+      ${metricItem("梯度范数", number(latest.grad_norm, 4))}
     </section>
 
     <section class="section-band">
@@ -222,9 +252,9 @@ function renderDetail() {
       <div class="section-heading"><h3>训练指标</h3><span>按 step 更新</span></div>
       <div class="section-content chart-grid">
         <div class="chart-block"><h4>每 Step 平均奖励 / 有效回答</h4><canvas id="rewardChart"></canvas></div>
-        <div class="chart-block"><h4>KL / Entropy</h4><canvas id="policyChart"></canvas></div>
-        <div class="chart-block"><h4>Gradient Norm</h4><canvas id="gradientChart"></canvas></div>
-        <div class="chart-block"><h4>正确性分组</h4><canvas id="groupChart"></canvas></div>
+        <div class="chart-block" title="KL loss 衡量当前策略偏离参考模型所产生的惩罚项；Entropy 衡量输出随机性。"><h4>KL Loss / Entropy</h4><canvas id="policyChart"></canvas></div>
+        <div class="chart-block" title="本步参数更新前的整体梯度大小。应结合组内学习信号判断，单个尖峰不能直接判定训练崩溃。"><h4>梯度范数</h4><canvas id="gradientChart"></canvas></div>
+        <div class="chart-block" title="每个 prompt 的多次 rollout 组成一组；全对或全错表示组内没有正确性差异。"><h4>正确性分组（每个 Prompt）</h4><canvas id="groupChart"></canvas></div>
         <div class="chart-block"><h4>组内学习信号</h4><canvas id="signalChart"></canvas></div>
         <div class="chart-block"><h4>Rollout 质量</h4><canvas id="qualityChart"></canvas></div>
       </div>
@@ -374,7 +404,7 @@ function drawCharts(rows) {
     { key: "valid_ratio", label: "valid", color: "#285a8e" },
   ]);
   drawLineChart("policyChart", rows, [
-    { key: "kl_loss", label: "KL", color: "#8c4f15" },
+    { key: "kl_loss", label: "KL loss", color: "#8c4f15" },
     { key: "entropy", label: "entropy", color: "#5d4a8d" },
   ]);
   drawLineChart("gradientChart", rows, [{ key: "grad_norm", label: "grad norm", color: "#a22b2b" }]);
@@ -425,6 +455,7 @@ async function loadRollouts() {
       <summary><strong>#${index + 1}</strong><span>reward ${escapeHtml(record.score ?? record.reward ?? "-")}</span><span>acc ${escapeHtml(record.acc ?? "-")}</span><span>pred ${escapeHtml(record.pred ?? "-")}</span></summary>
       <pre>${escapeHtml(`PROMPT\n${record.input ?? record.prompt ?? ""}\n\nOUTPUT\n${record.output ?? record.response ?? ""}`)}</pre>
     </details>`).join("")}</div>` : '<span class="no-labels">该 step 没有可读取的 rollout。</span>';
+    state.rolloutEvidence = captureDetailState();
   } catch (error) {
     content.innerHTML = `<span class="no-labels">读取失败：${escapeHtml(error.message)}</span>`;
   }

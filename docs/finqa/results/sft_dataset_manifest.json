@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0.0",
+  "source": "FinQA official repository",
+  "task": "financial_numerical_reasoning_sft",
+  "target": "Answer/Program/Evidence/End executable format",
+  "splits": {
+    "train": {
+      "rows": 6251,
+      "sha256": "9f2ab135e7febad901b517859d1cb52c8318478f4fda526cf7b51d0aeb1d646c"
+    },
+    "dev": {
+      "rows": 883,
+      "sha256": "cd46738835e5f116d1c9ef589f36e2fb95b5ae86184bff2941815fe933f24c58"
+    }
+  }
+}

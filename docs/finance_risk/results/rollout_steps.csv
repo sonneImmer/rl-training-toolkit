@@ -1,0 +1,3 @@
+step,reward_mean,format_valid_rate,bankruptcy_outputs,healthy_outputs,effective_group_rate,constant_group_rate
+1,0.359375,1.0,21,43,0.625,0.375
+2,0.484375,1.0,23,41,0.75,0.25

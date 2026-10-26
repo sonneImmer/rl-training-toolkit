@@ -1,0 +1,3 @@
+algorithm,run,steps,avg_constant_group_rate,avg_effective_group_rate,constant_rule_hits,positive_no_advantage_rule_hits,final_bankruptcy_outputs,final_healthy_outputs
+GRPO,C1,5,0.6625,0.3375,4,3,4,60
+NGRPO,C3,5,0.4875,0.5125,1,0,4,60

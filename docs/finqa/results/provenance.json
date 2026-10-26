@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0.0",
+  "experiment_date": "2026-10-20",
+  "case_id": "finqa-executable-reward-toolchain",
+  "dataset": {
+    "source": "FinQA official repository",
+    "license": "MIT",
+    "rl_manifest": "rl_dataset_manifest.json",
+    "sft_manifest": "sft_dataset_manifest.json"
+  },
+  "environment": {
+    "accelerator": "Ascend 910B3",
+    "image": "openpangu-72b-2512-postrain:v1-zkx-pangu-mathfix",
+    "experiment_code_revision": "dcf791335687fb2b0591497b485733fafe66644c"
+  },
+  "status": "toolchain_smoke_tested_not_a_final_business_case",
+  "excluded_artifacts": [
+    "model weights",
+    "checkpoints",
+    "parquet data",
+    "full rollout JSONL",
+    "training logs"
+  ]
+}

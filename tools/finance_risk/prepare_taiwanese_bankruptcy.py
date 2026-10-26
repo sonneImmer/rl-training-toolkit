@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Convert the UCI Taiwanese Bankruptcy dataset to a VERL RL dataset."""
+"""Convert UCI Taiwanese Bankruptcy data into fixed VERL train/dev/test splits."""
 from __future__ import annotations
 
 import argparse
@@ -78,27 +78,37 @@ def choose_features(columns: list[str], count: int) -> list[str]:
     return selected[:count]
 
 
-def stratified_split(frame: pd.DataFrame, label: str, seed: int, test_fraction: float):
+def stratified_three_way_split(
+    frame: pd.DataFrame,
+    label: str,
+    seed: int,
+    dev_fraction: float,
+    test_fraction: float,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     rng = random.Random(seed)
     train_parts = []
+    dev_parts = []
     test_parts = []
     for value in sorted(frame[label].unique()):
         indices = list(frame.index[frame[label] == value])
         rng.shuffle(indices)
         test_size = max(1, round(len(indices) * test_fraction))
+        dev_size = max(1, round(len(indices) * dev_fraction))
         test_parts.append(frame.loc[indices[:test_size]])
-        train_parts.append(frame.loc[indices[test_size:]])
+        dev_parts.append(frame.loc[indices[test_size:test_size + dev_size]])
+        train_parts.append(frame.loc[indices[test_size + dev_size:]])
     train = pd.concat(train_parts).sample(frac=1, random_state=seed).reset_index(drop=True)
-    test = pd.concat(test_parts).sample(frac=1, random_state=seed + 1).reset_index(drop=True)
-    return train, test
+    dev = pd.concat(dev_parts).sample(frac=1, random_state=seed + 1).reset_index(drop=True)
+    test = pd.concat(test_parts).sample(frac=1, random_state=seed + 2).reset_index(drop=True)
+    return train, dev, test
 
 
-def cap_ratio(frame: pd.DataFrame, label: str, negative_ratio: int, seed: int) -> pd.DataFrame:
+def cap_training_ratio(frame: pd.DataFrame, label: str, negative_ratio: int, seed: int) -> pd.DataFrame:
     positive = frame[frame[label] == 1]
     negative = frame[frame[label] == 0]
     keep_negative = min(len(negative), len(positive) * negative_ratio)
-    negative = negative.sample(n=keep_negative, random_state=seed)
-    return pd.concat([positive, negative]).sample(frac=1, random_state=seed + 7).reset_index(drop=True)
+    sampled_negative = negative.sample(n=keep_negative, random_state=seed)
+    return pd.concat([positive, sampled_negative]).sample(frac=1, random_state=seed + 7).reset_index(drop=True)
 
 
 def format_number(value) -> str:
@@ -122,6 +132,7 @@ def convert_split(frame: pd.DataFrame, features: list[str], split: str, source_h
     records = []
     for index, row in frame.iterrows():
         label = int(row["Bankrupt?"])
+        feature_values = {name.strip(): float(row[name]) for name in features}
         sample_id = f"uci-taiwanese-bankruptcy/{split}/{index}"
         records.append({
             "prompt": [{"role": "user", "content": build_prompt(row, features)}],
@@ -132,6 +143,7 @@ def convert_split(frame: pd.DataFrame, features: list[str], split: str, source_h
                 "sample_id": sample_id,
                 "label": label,
                 "feature_names": [name.strip() for name in features],
+                "feature_values": feature_values,
                 "source_sha256": source_hash,
             },
         })
@@ -144,37 +156,48 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--feature-count", type=int, default=36)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--test-fraction", type=float, default=0.2)
-    parser.add_argument("--negative-ratio", type=int, default=3)
+    parser.add_argument("--dev-fraction", type=float, default=0.15)
+    parser.add_argument("--test-fraction", type=float, default=0.15)
+    parser.add_argument("--train-negative-ratio", type=int, default=3)
     args = parser.parse_args()
 
     if args.output.exists():
         raise FileExistsError(f"output already exists: {args.output}")
+    if args.dev_fraction + args.test_fraction >= 1:
+        raise ValueError("dev_fraction + test_fraction must be below 1")
     frame, archive_member = find_csv(args.source_zip)
     frame.columns = [column.strip() for column in frame.columns]
     if "Bankrupt?" not in frame.columns:
         raise ValueError("Bankrupt? label column not found")
     if frame.isna().any().any():
         raise ValueError("dataset contains missing values")
+    if frame.duplicated().any():
+        raise ValueError("dataset contains duplicate rows")
+
     features = choose_features(frame.columns.tolist(), args.feature_count)
-    train, test = stratified_split(frame, "Bankrupt?", args.seed, args.test_fraction)
-    train = cap_ratio(train, "Bankrupt?", args.negative_ratio, args.seed)
-    test = cap_ratio(test, "Bankrupt?", args.negative_ratio, args.seed + 1)
+    natural_train, dev, test = stratified_three_way_split(
+        frame, "Bankrupt?", args.seed, args.dev_fraction, args.test_fraction
+    )
+    train = cap_training_ratio(natural_train, "Bankrupt?", args.train_negative_ratio, args.seed)
 
     args.output.mkdir(parents=True)
     source_hash = sha256(args.source_zip)
     split_stats = {}
-    for name, split in (("train", train), ("test", test)):
+    for name, split in (("train", train), ("dev", dev), ("test", test)):
         converted = convert_split(split, features, name, source_hash)
         path = args.output / f"{name}.parquet"
         converted.to_parquet(path, index=False)
+        positives = int(split["Bankrupt?"].sum())
         split_stats[name] = {
             "rows": len(split),
-            "positive": int(split["Bankrupt?"].sum()),
-            "negative": int((split["Bankrupt?"] == 0).sum()),
+            "positive": positives,
+            "negative": len(split) - positives,
+            "positive_rate": positives / len(split),
             "sha256": sha256(path),
         }
+
     manifest = {
+        "schema_version": "2.0.0",
         "source": "UCI Taiwanese Bankruptcy Prediction",
         "source_archive": str(args.source_zip),
         "source_archive_member": archive_member,
@@ -182,10 +205,16 @@ def main():
         "license": "CC BY 4.0",
         "original_rows": len(frame),
         "original_features": len(frame.columns) - 1,
+        "original_positive_rate": float(frame["Bankrupt?"].mean()),
         "selected_feature_count": len(features),
         "selected_features": [name.strip() for name in features],
         "seed": args.seed,
-        "negative_ratio": args.negative_ratio,
+        "split_policy": {
+            "dev_fraction": args.dev_fraction,
+            "test_fraction": args.test_fraction,
+            "train_negative_ratio": args.train_negative_ratio,
+            "dev_test_keep_natural_distribution": True,
+        },
         "splits": split_stats,
         "contains_cot": False,
         "task": "binary_bankruptcy_risk_classification",

@@ -1,0 +1,82 @@
+{
+  "schema_version": "2.0.0",
+  "source": "UCI Taiwanese Bankruptcy Prediction",
+  "source_archive": "<source-root>/taiwanese_bankruptcy_prediction.zip",
+  "source_archive_member": "data.csv",
+  "source_sha256": "c346f5ad2618cb198e7ed8306cf2f31fe3bb2ec60acdbbe1736788d50f269aac",
+  "license": "CC BY 4.0",
+  "original_rows": 6819,
+  "original_features": 95,
+  "original_positive_rate": 0.03226279513125092,
+  "selected_feature_count": 36,
+  "selected_features": [
+    "ROA(C) before interest and depreciation before interest",
+    "ROA(A) before interest and % after tax",
+    "ROA(B) before interest and depreciation after tax",
+    "Operating Gross Margin",
+    "Realized Sales Gross Margin",
+    "Operating Profit Rate",
+    "Pre-tax net Interest Rate",
+    "After-tax net Interest Rate",
+    "Non-industry income and expenditure/revenue",
+    "Continuous interest rate (after tax)",
+    "Operating Expense Rate",
+    "Research and development expense rate",
+    "Cash flow rate",
+    "Interest-bearing debt interest rate",
+    "Tax rate (A)",
+    "Net Value Per Share (B)",
+    "Net Value Per Share (A)",
+    "Net Value Per Share (C)",
+    "Persistent EPS in the Last Four Seasons",
+    "Cash Flow Per Share",
+    "Revenue Per Share (Yuan ¥)",
+    "Operating Profit Per Share (Yuan ¥)",
+    "Per Share Net profit before tax (Yuan ¥)",
+    "Realized Sales Gross Profit Growth Rate",
+    "Operating Profit Growth Rate",
+    "After-tax Net Profit Growth Rate",
+    "Regular Net Profit Growth Rate",
+    "Continuous Net Profit Growth Rate",
+    "Total Asset Growth Rate",
+    "Net Value Growth Rate",
+    "Total Asset Return Growth Rate Ratio",
+    "Cash Reinvestment %",
+    "Current Ratio",
+    "Quick Ratio",
+    "Interest Expense Ratio",
+    "Total debt/Total net worth"
+  ],
+  "seed": 42,
+  "split_policy": {
+    "dev_fraction": 0.15,
+    "test_fraction": 0.15,
+    "train_negative_ratio": 3,
+    "dev_test_keep_natural_distribution": true
+  },
+  "splits": {
+    "train": {
+      "rows": 616,
+      "positive": 154,
+      "negative": 462,
+      "positive_rate": 0.25,
+      "sha256": "deb8e01c008a7faf5d4c74f687bff98da83c69959a724f63a91f9162611f0132"
+    },
+    "dev": {
+      "rows": 1023,
+      "positive": 33,
+      "negative": 990,
+      "positive_rate": 0.03225806451612903,
+      "sha256": "bd4a9196e391a06401f3a0567367b9a53b0bb7be2f8a8f4ee7e767ce2bd3c753"
+    },
+    "test": {
+      "rows": 1023,
+      "positive": 33,
+      "negative": 990,
+      "positive_rate": 0.03225806451612903,
+      "sha256": "b1c7684fd8c36fc4f746857fb69a6575edf394650d7aa683737544ffe5b90fb1"
+    }
+  },
+  "contains_cot": false,
+  "task": "binary_bankruptcy_risk_classification"
+}

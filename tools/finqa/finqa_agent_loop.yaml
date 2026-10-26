@@ -1,0 +1,2 @@
+- name: finqa_single_turn
+  _target_: finqa_agent_loop.FinQASingleTurnAgentLoop

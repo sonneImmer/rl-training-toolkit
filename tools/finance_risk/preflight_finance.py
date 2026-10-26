@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Validate financial-risk RL data, prompt lengths, and outcome reward."""
 from __future__ import annotations
 
 import argparse
@@ -6,7 +7,7 @@ import json
 from pathlib import Path
 
 
-def main():
+def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", type=Path, required=True)
     parser.add_argument("--model", required=True)
@@ -23,8 +24,12 @@ def main():
     args.output.mkdir(parents=True, exist_ok=False)
     tokenizer = AutoTokenizer.from_pretrained(args.model, local_files_only=True, trust_remote_code=False)
     reward_fn = load_extern_object(module_path=str(args.reward), object_name="compute_score")
+    reward_tests = load_extern_object(module_path=str(args.reward), object_name="REWARD_TEST_CASES")
     rows = []
-    for split in ("train", "test"):
+    for split in ("train", "dev", "test"):
+        split_path = args.data / f"{split}.parquet"
+        if not split_path.is_file():
+            continue
         config = OmegaConf.create({
             "prompt_key": "prompt",
             "max_prompt_length": args.max_prompt_length,
@@ -33,26 +38,26 @@ def main():
             "shuffle": False,
             "cache_dir": str(args.output / "cache"),
         })
-        dataset = RLHFDataset([str(args.data / f"{split}.parquet")], tokenizer, config)
+        dataset = RLHFDataset([str(split_path)], tokenizer, config)
         for index in range(len(dataset)):
             item = dataset[index]
-            messages = list(item["raw_prompt"])
-            tokens = tokenizer.apply_chat_template(messages, add_generation_prompt=True, tokenize=True)
+            tokens = tokenizer.apply_chat_template(
+                list(item["raw_prompt"]), add_generation_prompt=True, tokenize=True
+            )
             rows.append({"split": split, "index": index, "token_count": len(tokens)})
-    tests = [
-        ("Risk: BANKRUPTCY\nEvidence: Current Ratio=0.1; Quick Ratio=0.2", "BANKRUPTCY", 4.0),
-        ("Risk: HEALTHY\nEvidence: Current Ratio=0.1; Quick Ratio=0.2", "BANKRUPTCY", -2.0),
-        ("unknown", "HEALTHY", -4.0),
-    ]
-    for response, truth, expected in tests:
-        result = reward_fn(
+
+    reward_rule_id = "unknown"
+    for response, truth, expected in reward_tests:
+        reward_result = reward_fn(
             data_source="finance_risk_taiwanese_bankruptcy",
             solution_str=response,
             ground_truth=truth,
             extra_info={"feature_names": ["Current Ratio", "Quick Ratio"]},
         )
-        if result["score"] != expected:
-            raise AssertionError((response, result, expected))
+        if reward_result["score"] != expected:
+            raise AssertionError((response, reward_result, expected))
+        reward_rule_id = reward_result.get("reward_rule_id", reward_rule_id)
+
     overlength = [row for row in rows if row["token_count"] > args.max_prompt_length]
     result = {
         "status": "pass" if not overlength else "blocked_overlength",
@@ -60,13 +65,13 @@ def main():
         "max_tokens": max(row["token_count"] for row in rows),
         "mean_tokens": sum(row["token_count"] for row in rows) / len(rows),
         "overlength": len(overlength),
-        "reward_tests": len(tests),
+        "reward_rule_id": reward_rule_id,
+        "reward_tests": len(reward_tests),
     }
     (args.output / "result.json").write_text(json.dumps(result, indent=2) + "\n")
     print(json.dumps(result, indent=2))
-    if overlength:
-        raise SystemExit(1)
+    return 1 if overlength else 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

@@ -1,0 +1,104 @@
+{
+  "schema_version": "1.0.0",
+  "steps": [
+    {
+      "step": 1,
+      "rows": 64,
+      "groups": 16,
+      "group_size_counts": {
+        "4": 16
+      },
+      "reward_mean": 0.359375,
+      "format_valid_rate": 1.0,
+      "prediction_counts": {
+        "BANKRUPTCY": 21,
+        "HEALTHY": 43
+      },
+      "group_counts": {
+        "all_correct": 1,
+        "all_wrong": 5,
+        "mixed": 7,
+        "near_all_correct": 1,
+        "near_all_wrong": 2
+      },
+      "label_group_counts": {
+        "BANKRUPTCY:all_wrong": 4,
+        "BANKRUPTCY:mixed": 5,
+        "BANKRUPTCY:near_all_wrong": 2,
+        "HEALTHY:all_correct": 1,
+        "HEALTHY:all_wrong": 1,
+        "HEALTHY:mixed": 2,
+        "HEALTHY:near_all_correct": 1
+      },
+      "effective_group_rate": 0.625,
+      "constant_group_rate": 0.375,
+      "rules": [
+        {
+          "rule_id": "finance.constant_group_rate.high",
+          "hit": false,
+          "value": 0.375,
+          "threshold": 0.5
+        },
+        {
+          "rule_id": "finance.positive_groups.no_advantage",
+          "hit": false,
+          "evidence": {
+            "BANKRUPTCY:all_wrong": 4,
+            "BANKRUPTCY:mixed": 5,
+            "BANKRUPTCY:near_all_wrong": 2
+          }
+        }
+      ]
+    },
+    {
+      "step": 2,
+      "rows": 64,
+      "groups": 16,
+      "group_size_counts": {
+        "4": 16
+      },
+      "reward_mean": 0.484375,
+      "format_valid_rate": 1.0,
+      "prediction_counts": {
+        "BANKRUPTCY": 23,
+        "HEALTHY": 41
+      },
+      "group_counts": {
+        "all_correct": 2,
+        "all_wrong": 2,
+        "mixed": 7,
+        "near_all_correct": 2,
+        "near_all_wrong": 3
+      },
+      "label_group_counts": {
+        "BANKRUPTCY:all_correct": 1,
+        "BANKRUPTCY:all_wrong": 2,
+        "BANKRUPTCY:mixed": 4,
+        "BANKRUPTCY:near_all_wrong": 3,
+        "HEALTHY:all_correct": 1,
+        "HEALTHY:mixed": 3,
+        "HEALTHY:near_all_correct": 2
+      },
+      "effective_group_rate": 0.75,
+      "constant_group_rate": 0.25,
+      "rules": [
+        {
+          "rule_id": "finance.constant_group_rate.high",
+          "hit": false,
+          "value": 0.25,
+          "threshold": 0.5
+        },
+        {
+          "rule_id": "finance.positive_groups.no_advantage",
+          "hit": false,
+          "evidence": {
+            "BANKRUPTCY:all_correct": 1,
+            "BANKRUPTCY:all_wrong": 2,
+            "BANKRUPTCY:mixed": 4,
+            "BANKRUPTCY:near_all_wrong": 3
+          }
+        }
+      ]
+    }
+  ]
+}

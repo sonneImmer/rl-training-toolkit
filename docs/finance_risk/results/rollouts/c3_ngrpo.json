@@ -1,0 +1,238 @@
+{
+  "schema_version": "1.0.0",
+  "steps": [
+    {
+      "step": 1,
+      "rows": 64,
+      "groups": 16,
+      "group_size_counts": {
+        "4": 16
+      },
+      "reward_mean": 0.640625,
+      "format_valid_rate": 1.0,
+      "prediction_counts": {
+        "BANKRUPTCY": 23,
+        "HEALTHY": 41
+      },
+      "group_counts": {
+        "all_correct": 5,
+        "all_wrong": 2,
+        "mixed": 6,
+        "near_all_correct": 3
+      },
+      "label_group_counts": {
+        "BANKRUPTCY:all_correct": 1,
+        "BANKRUPTCY:all_wrong": 1,
+        "BANKRUPTCY:mixed": 1,
+        "HEALTHY:all_correct": 4,
+        "HEALTHY:all_wrong": 1,
+        "HEALTHY:mixed": 5,
+        "HEALTHY:near_all_correct": 3
+      },
+      "effective_group_rate": 0.5625,
+      "constant_group_rate": 0.4375,
+      "rules": [
+        {
+          "rule_id": "finance.constant_group_rate.high",
+          "hit": false,
+          "value": 0.4375,
+          "threshold": 0.5
+        },
+        {
+          "rule_id": "finance.positive_groups.no_advantage",
+          "hit": false,
+          "evidence": {
+            "BANKRUPTCY:all_correct": 1,
+            "BANKRUPTCY:all_wrong": 1,
+            "BANKRUPTCY:mixed": 1
+          }
+        }
+      ]
+    },
+    {
+      "step": 2,
+      "rows": 64,
+      "groups": 16,
+      "group_size_counts": {
+        "4": 16
+      },
+      "reward_mean": 0.703125,
+      "format_valid_rate": 1.0,
+      "prediction_counts": {
+        "BANKRUPTCY": 17,
+        "HEALTHY": 47
+      },
+      "group_counts": {
+        "all_correct": 5,
+        "all_wrong": 1,
+        "mixed": 5,
+        "near_all_correct": 5
+      },
+      "label_group_counts": {
+        "BANKRUPTCY:all_wrong": 1,
+        "BANKRUPTCY:mixed": 2,
+        "BANKRUPTCY:near_all_correct": 1,
+        "HEALTHY:all_correct": 5,
+        "HEALTHY:mixed": 3,
+        "HEALTHY:near_all_correct": 4
+      },
+      "effective_group_rate": 0.625,
+      "constant_group_rate": 0.375,
+      "rules": [
+        {
+          "rule_id": "finance.constant_group_rate.high",
+          "hit": false,
+          "value": 0.375,
+          "threshold": 0.5
+        },
+        {
+          "rule_id": "finance.positive_groups.no_advantage",
+          "hit": false,
+          "evidence": {
+            "BANKRUPTCY:all_wrong": 1,
+            "BANKRUPTCY:mixed": 2,
+            "BANKRUPTCY:near_all_correct": 1
+          }
+        }
+      ]
+    },
+    {
+      "step": 3,
+      "rows": 64,
+      "groups": 16,
+      "group_size_counts": {
+        "4": 16
+      },
+      "reward_mean": 0.625,
+      "format_valid_rate": 1.0,
+      "prediction_counts": {
+        "BANKRUPTCY": 18,
+        "HEALTHY": 46
+      },
+      "group_counts": {
+        "all_correct": 4,
+        "all_wrong": 3,
+        "mixed": 3,
+        "near_all_correct": 6
+      },
+      "label_group_counts": {
+        "BANKRUPTCY:all_wrong": 2,
+        "BANKRUPTCY:mixed": 1,
+        "BANKRUPTCY:near_all_correct": 1,
+        "HEALTHY:all_correct": 4,
+        "HEALTHY:all_wrong": 1,
+        "HEALTHY:mixed": 2,
+        "HEALTHY:near_all_correct": 5
+      },
+      "effective_group_rate": 0.5625,
+      "constant_group_rate": 0.4375,
+      "rules": [
+        {
+          "rule_id": "finance.constant_group_rate.high",
+          "hit": false,
+          "value": 0.4375,
+          "threshold": 0.5
+        },
+        {
+          "rule_id": "finance.positive_groups.no_advantage",
+          "hit": false,
+          "evidence": {
+            "BANKRUPTCY:all_wrong": 2,
+            "BANKRUPTCY:mixed": 1,
+            "BANKRUPTCY:near_all_correct": 1
+          }
+        }
+      ]
+    },
+    {
+      "step": 4,
+      "rows": 64,
+      "groups": 16,
+      "group_size_counts": {
+        "4": 16
+      },
+      "reward_mean": 0.609375,
+      "format_valid_rate": 1.0,
+      "prediction_counts": {
+        "BANKRUPTCY": 11,
+        "HEALTHY": 53
+      },
+      "group_counts": {
+        "all_correct": 4,
+        "all_wrong": 3,
+        "mixed": 2,
+        "near_all_correct": 6,
+        "near_all_wrong": 1
+      },
+      "label_group_counts": {
+        "BANKRUPTCY:all_wrong": 3,
+        "BANKRUPTCY:near_all_wrong": 1,
+        "HEALTHY:all_correct": 4,
+        "HEALTHY:mixed": 2,
+        "HEALTHY:near_all_correct": 6
+      },
+      "effective_group_rate": 0.5625,
+      "constant_group_rate": 0.4375,
+      "rules": [
+        {
+          "rule_id": "finance.constant_group_rate.high",
+          "hit": false,
+          "value": 0.4375,
+          "threshold": 0.5
+        },
+        {
+          "rule_id": "finance.positive_groups.no_advantage",
+          "hit": false,
+          "evidence": {
+            "BANKRUPTCY:all_wrong": 3,
+            "BANKRUPTCY:near_all_wrong": 1
+          }
+        }
+      ]
+    },
+    {
+      "step": 5,
+      "rows": 64,
+      "groups": 16,
+      "group_size_counts": {
+        "4": 16
+      },
+      "reward_mean": 0.71875,
+      "format_valid_rate": 1.0,
+      "prediction_counts": {
+        "BANKRUPTCY": 4,
+        "HEALTHY": 60
+      },
+      "group_counts": {
+        "all_correct": 9,
+        "all_wrong": 3,
+        "near_all_correct": 3,
+        "near_all_wrong": 1
+      },
+      "label_group_counts": {
+        "BANKRUPTCY:all_wrong": 3,
+        "BANKRUPTCY:near_all_wrong": 1,
+        "HEALTHY:all_correct": 9,
+        "HEALTHY:near_all_correct": 3
+      },
+      "effective_group_rate": 0.25,
+      "constant_group_rate": 0.75,
+      "rules": [
+        {
+          "rule_id": "finance.constant_group_rate.high",
+          "hit": true,
+          "value": 0.75,
+          "threshold": 0.5
+        },
+        {
+          "rule_id": "finance.positive_groups.no_advantage",
+          "hit": false,
+          "evidence": {
+            "BANKRUPTCY:all_wrong": 3,
+            "BANKRUPTCY:near_all_wrong": 1
+          }
+        }
+      ]
+    }
+  ]
+}

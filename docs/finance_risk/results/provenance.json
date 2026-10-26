@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0.0",
+  "experiment_date": "2026-10-20",
+  "case_id": "finance-risk-rl-case-20261020",
+  "dataset": {
+    "source": "UCI Taiwanese Bankruptcy Prediction",
+    "license": "CC BY 4.0",
+    "manifest": "dataset_manifest.json",
+    "sft_manifest": "sft_dataset_manifest.json"
+  },
+  "environment": {
+    "accelerator": "8x Ascend 910B3",
+    "image": "openpangu-72b-2512-postrain:v1-zkx-pangu-mathfix",
+    "experiment_code_revision": "dcf791335687fb2b0591497b485733fafe66644c"
+  },
+  "runs": {
+    "c1_grpo": "finance-risk-grpo.vzN5HQBu",
+    "c3_ngrpo": "finance-risk-grpo.Cpj70KDp",
+    "c8_ngrpo_balanced": "finance-risk-grpo.rz7gDzsp"
+  },
+  "evaluations": {
+    "base": "finance-risk-e0-base-training-template-20261020",
+    "sft": "finance-risk-e1-sft-template-20261020",
+    "c8_step1": "finance-risk-c8-step1-20261020",
+    "c8_step2": "finance-risk-c8-step2-20261020"
+  },
+  "status": "prototype_complete_business_acceptance_pending",
+  "excluded_artifacts": [
+    "model weights",
+    "checkpoints",
+    "parquet data",
+    "full predictions",
+    "full rollout JSONL",
+    "training logs"
+  ]
+}

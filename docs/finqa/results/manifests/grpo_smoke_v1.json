@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0.0",
+  "task": {
+    "domain": "finance",
+    "type": "financial_numerical_reasoning"
+  },
+  "dataset": {
+    "id": "<container-data-root>",
+    "feature_count": "financial_text_table"
+  },
+  "prompt": {
+    "contains_cot": false,
+    "reasoning_format": "executable_program"
+  },
+  "reward": {
+    "definition": "finqa_execution_answer_evidence_v1",
+    "min": -4.0,
+    "max": 4.0
+  },
+  "model": {
+    "id": "/mnt/model"
+  },
+  "training": {
+    "algorithm": "grpo",
+    "seed": 42,
+    "total_steps": 5
+  },
+  "resources": {
+    "npu_count": 4,
+    "visible_devices": [
+      "0",
+      "1",
+      "2",
+      "3"
+    ]
+  },
+  "environment": {
+    "image": "openpangu-72b-2512-postrain:v1-zkx-pangu-mathfix",
+    "patch_revision": "finqa-executable-v1",
+    "code_revision": "dcf791335687fb2b0591497b485733fafe66644c"
+  }
+}

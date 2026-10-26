@@ -1,0 +1,18 @@
+{
+  "samples": 1023,
+  "positive_samples": 33,
+  "negative_samples": 990,
+  "true_positive": 33,
+  "false_positive": 990,
+  "true_negative": 0,
+  "false_negative": 0,
+  "invalid_output": 0,
+  "invalid_negative": 0,
+  "accuracy": 0.03225806451612903,
+  "precision": 0.03225806451612903,
+  "recall": 1.0,
+  "f1": 0.0625,
+  "f2": 0.14285714285714288,
+  "false_negative_rate": 0.0,
+  "format_valid_rate": 1.0
+}

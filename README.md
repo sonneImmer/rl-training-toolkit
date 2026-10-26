@@ -110,3 +110,10 @@ export CODE_REVISION=$(git rev-parse HEAD)
 ```
 
 看板使用清单展示任务、Reward、资源和版本，并检查实验是否具备严格算法对比所需的配置记录。旧实验没有清单时显示“未记录”，不会猜测缺失信息。
+
+## 已归档实验案例
+
+- `docs/ARCHIVE_INDEX.md`：归档范围和状态约定。
+- `docs/finance_risk/`：金融风控 RL 原型案例与复现材料。
+- `docs/finqa/`：FinQA 可执行 Reward 基准工具链。
+- `docs/amlsim/`：AMLSim 反洗钱 RL 案例与完整实验结果。

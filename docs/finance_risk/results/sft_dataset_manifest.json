@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0.0",
+  "source": "<generated-dataset-root>/finance_taiwanese_bankruptcy_v2",
+  "task": "binary_bankruptcy_risk_format_sft",
+  "target": "Risk label and input-grounded evidence format",
+  "evidence_note": "Evidence fields are copied from input for format grounding; they are not expert causal explanations.",
+  "splits": {
+    "train": {
+      "rows": 616,
+      "sha256": "f7734f406825ff38da14b90f7845614ca6415cab98a7eb6e46eb08a02854cd52"
+    },
+    "dev": {
+      "rows": 1023,
+      "sha256": "c039af4baa1aba09acdb5dd31c54cc1083f58195fb8f8a4cf0a8f0125f2520dd"
+    }
+  }
+}

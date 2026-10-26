@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0.0",
+  "source": "FinQA official repository",
+  "source_path": "/mnt/source",
+  "license": "MIT",
+  "task": "financial_numerical_reasoning",
+  "context": "official model_input plus financial table",
+  "reasoning_supervision": "executable sequential program",
+  "contains_free_text_cot": false,
+  "reward": {
+    "definition": "finqa_execution_answer_evidence_v2",
+    "min": -4.0,
+    "max": 4.0,
+    "primary_signal": "program execution result equals gold answer"
+  },
+  "splits": {
+    "train": {
+      "rows": 6251,
+      "source_sha256": "49f237eb9779b569473b26b08048867d04635a7cc39ad6a7a5664c55bb428db6",
+      "parquet_sha256": "fc611aaecce51a6ff1b9dc0dbe083cb6bbc99aa6f4f71f3ed7ec5c53070ed0b2"
+    },
+    "dev": {
+      "rows": 883,
+      "source_sha256": "a847fb7e0d61a3125a1e2909852df6b89f1ee64d2c5ff1bf689e332214deee51",
+      "parquet_sha256": "439909e430695c7413d33a40727bdc600e5370c9080b60a7213c4225dd7970a4"
+    },
+    "test": {
+      "rows": 1147,
+      "source_sha256": "831dbfb2e785dbc227f895ce3f24046433467aec67b09db2bd6ac7692a8a30dc",
+      "parquet_sha256": "9258795a1ba885e68bb99d384889f0eaf8e478e56d5a9bc3401160364d699b36"
+    }
+  }
+}
