@@ -68,3 +68,24 @@ rl-dashboard \
   --state-dir /mnt/local/transformer_files/zkx/experiment_registry \
   --host 0.0.0.0 --port 8765
 ```
+
+## Move experiment evidence to another machine
+
+Create a portable archive without checkpoints or model weights:
+
+```bash
+python3 tools/experiment_bundle.py export \
+  --runs-root /mnt/local/transformer_files/zkx/runs \
+  --output /mnt/local/transformer_files/zkx/exports/rl-experiments.tar.gz \
+  --all
+```
+
+After transferring the archive and cloning this repository, restore and serve it:
+
+```bash
+python3 tools/experiment_bundle.py import \
+  --archive ~/Downloads/rl-experiments.tar.gz \
+  --output ~/rl-experiment-runs
+rl-dashboard --runs-root ~/rl-experiment-runs \
+  --state-dir ~/rl-experiment-state --host 127.0.0.1 --port 8765
+```

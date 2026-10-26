@@ -128,6 +128,41 @@ export CODE_REVISION=$(git rev-parse HEAD)
 
 看板使用清单展示任务、Reward、资源和版本，并检查实验是否具备严格算法对比所需的配置记录。旧实验没有清单时显示“未记录”，不会猜测缺失信息。
 
+## 实验材料导出与本地查看
+
+实验归档只包含看板需要的 `train.log`、`run_manifest.json`、rollout JSONL 和诊断/报告材料，不包含 checkpoint 或模型权重。导出全部实验：
+
+```bash
+python3 tools/experiment_bundle.py export \
+  --runs-root /mnt/local/transformer_files/zkx/runs \
+  --output /mnt/local/transformer_files/zkx/exports/rl-experiments.tar.gz \
+  --all
+```
+
+只导出指定实验时，可重复提供相对 `runs-root` 的 `--run`：
+
+```bash
+python3 tools/experiment_bundle.py export \
+  --runs-root /mnt/local/transformer_files/zkx/runs \
+  --output /tmp/amlsim-case.tar.gz \
+  --run amlsim-rl-20261021/amlsim-rl.QkHeuNtm
+```
+
+将归档下载到本地电脑，克隆本仓库后导入并启动：
+
+```bash
+python3 tools/experiment_bundle.py import \
+  --archive ~/Downloads/rl-experiments.tar.gz \
+  --output ~/rl-experiment-runs
+python3 -m pip install -e .
+rl-dashboard \
+  --runs-root ~/rl-experiment-runs \
+  --state-dir ~/rl-experiment-state \
+  --host 127.0.0.1 --port 8765
+```
+
+浏览器打开 `http://127.0.0.1:8765`。归档内的 `manifest.json` 记录工具 Git revision、文件清单与 SHA256；导入时自动校验。`experiment_registry` 是可重建缓存，无需导出。
+
 ## 已归档实验案例
 
 - `docs/ARCHIVE_INDEX.md`：归档范围和状态约定。
