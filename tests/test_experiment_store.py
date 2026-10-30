@@ -36,6 +36,8 @@ def test_experiment_object_is_persisted(tmp_path):
     assert (object_dir / "snapshot.json").is_file()
     assert (object_dir / "final_snapshot.json").is_file()
     assert (object_dir / "events.jsonl").is_file()
+    error_label = next(item for item in snapshot["labels"] if item["name"] == "post_training_error")
+    assert "cleanup failure" in error_label["observation"]
 
 
 def test_rollout_evidence_can_be_loaded(tmp_path):
@@ -91,6 +93,11 @@ def test_short_experiment_gets_low_confidence_early_observations(tmp_path):
     assert early
     assert all(item["confidence"] == "low" for item in early)
     assert all(item["window_steps"] for item in early)
+    assert all(item["sample_count"] == 3 for item in early)
+    assert all(item["required_samples"] > item["sample_count"] for item in early)
+    assert all("正式判断" in item["observation"] for item in early)
+    unavailable = [item for item in evaluations if item["status"] == "not_evaluated"]
+    assert all(item["observation"] and item["decision_reason"] for item in unavailable)
 def test_experiment_comparison_reports_parameter_changes(tmp_path):
     runs_root = tmp_path / "runs"
     for name, algorithm, learning_rate, reward in (

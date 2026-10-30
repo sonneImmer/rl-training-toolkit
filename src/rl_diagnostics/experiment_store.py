@@ -93,6 +93,17 @@ class ExperimentStore:
             handle.seek(max(0, log_path.stat().st_size - 131072))
             return handle.read().decode(errors="replace")
 
+
+    @staticmethod
+    def _error_summary(tail: str) -> Optional[str]:
+        ansi = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
+        lines = [ansi.sub("", line).strip() for line in tail.splitlines()]
+        candidates = [line for line in lines if line and ERROR_MARKERS.search(line)]
+        if not candidates:
+            return None
+        summary = candidates[-1]
+        return summary if len(summary) <= 360 else summary[-360:]
+
     def _infer_total_steps(self, tail: str, configured_total: Optional[int]) -> Optional[int]:
         if configured_total:
             return configured_total
@@ -269,6 +280,98 @@ class ExperimentStore:
         }
 
     @staticmethod
+    def _stability_explanation(evaluation: dict, sample_count: int, minimum: int) -> dict:
+        rule_name = evaluation["rule_name"]
+        status = evaluation["status"]
+        titles = {
+            "explore_collapse": "探索能力收缩",
+            "kl_drift": "KL 漂移",
+            "clip_saturation": "裁剪饱和",
+            "gradient_spike": "梯度尖峰",
+            "output_truncation": "输出截断",
+            "reward_signal_degradation": "奖励信号退化",
+            "performance_degradation": "训练性能下降",
+        }
+        meanings = {
+            "explore_collapse": "Entropy 持续下降表示输出分布变得更集中，探索范围可能缩小。",
+            "kl_drift": "KL 持续偏高表示当前策略与参考模型的差异扩大。",
+            "clip_saturation": "大量样本被 PPO Clip 限制，实际策略更新可能受到压缩。",
+            "gradient_spike": "整体梯度范数显著高于历史水平，参数更新可能出现尖峰。",
+            "output_truncation": "较多回答达到最大生成长度，回答可能没有完整结束。",
+            "reward_signal_degradation": "同组 Reward 相同或接近的比例偏高，组内相对学习信号不足。",
+            "performance_degradation": "训练性能指标相对基线下降，需要用独立评测确认实际影响。",
+        }
+        boundaries = {
+            "explore_collapse": "Entropy 下降不等于效果必然变差，也可能是模型变得更确定。",
+            "kl_drift": "KL 不能单独代表正确率，也不能直接判定训练崩溃。",
+            "clip_saturation": "Clip Fraction 是汇总比例，不能定位到具体 Group。",
+            "gradient_spike": "Grad Norm 汇总了所有参与反向传播的样本和 Token，不能反推单个 Group 的贡献。",
+            "output_truncation": "达到长度上限不直接等于答案错误。",
+            "reward_signal_degradation": "低信息 Group 不等于总梯度为零；KL 等损失仍可能贡献梯度。",
+            "performance_degradation": "训练日志指标不能替代独立测试集结果。",
+        }
+        suggestions = {
+            "explore_collapse": ["联看 Reward、KL 与独立评测。", "抽查输出是否重复或过早固定为单一模式。"],
+            "kl_drift": ["检查 KL 系数、学习率和 Advantage 分布。", "联看独立评测确认偏离是否带来收益。"],
+            "clip_saturation": ["检查 Clip Fraction 是否连续偏高。", "联看学习率、Advantage 与 Grad Norm。"],
+            "gradient_spike": ["检查同 Step 的异常 Reward、KL 和 Clip Fraction。", "连续出现时再检查学习率与梯度裁剪。"],
+            "output_truncation": ["打开 Rollout 检查输出末尾。", "核对最大生成长度、EOS 和格式要求。"],
+            "reward_signal_degradation": ["检查同组 Reward 和 Advantage 是否大量相同。", "核对 Reward 区分度与每题 Rollout 数量。"],
+            "performance_degradation": ["使用固定独立测试集复评。", "按业务类别查看是否存在局部退化。"],
+        }
+        observed = evaluation.get("observed_value", evaluation.get("trigger_value"))
+        baseline = evaluation.get("baseline_value")
+        metric = evaluation.get("metric_name") or "所需指标"
+        steps = evaluation.get("window_steps") or []
+        threshold = evaluation.get("threshold")
+
+        if status == "not_evaluated":
+            if evaluation.get("reason") == "required_metric_missing":
+                observation = f"日志中没有读取到 {metric}，当前无法进行判断。"
+                decision = "规则所需指标缺失，不输出正常或异常结论。"
+            elif evaluation.get("reason") == "rule_disabled":
+                observation = "该规则当前未启用。"
+                decision = "配置明确关闭了该规则。"
+            else:
+                observation = f"当前只有 {sample_count} 个可用 Step，正式判断至少需要 {minimum} 个。"
+                decision = "样本不足时不强行给出稳定性结论。"
+        elif status.startswith("early_"):
+            values = []
+            if observed is not None:
+                values.append(f"当前窗口 {observed:.4g}")
+            if baseline is not None:
+                values.append(f"参考基线 {baseline:.4g}")
+            observation = f"当前 {sample_count} 个 Step 少于正式判断所需的 {minimum} 个；" + "，".join(values) + "。"
+            decision = "仅使用最近少量 Step 做低置信度观察；" + ("当前已越过早期判断线。" if status == "early_warning" else "当前未越过早期判断线。")
+        elif status == "triggered":
+            values = []
+            if observed is not None:
+                values.append(f"当前窗口 {observed:.4g}")
+            if baseline is not None:
+                values.append(f"参考基线 {baseline:.4g}")
+            if threshold is not None:
+                values.append(f"规则阈值 {threshold:.4g}")
+            observation = "，".join(values) + (f"；证据 Step：{', '.join(map(str, steps))}。" if steps else "。")
+            decision = "指标满足已配置的连续窗口与阈值条件，因此触发该稳定性提醒。"
+        else:
+            observation = f"已有 {sample_count} 个可用 Step，达到正式判断所需的 {minimum} 个。"
+            if observed is not None:
+                observation += f" 当前窗口值为 {observed:.4g}。"
+            decision = "指标未满足连续窗口与阈值条件，当前不触发提醒。"
+
+        evaluation.update({
+            "title": titles.get(rule_name, rule_name),
+            "sample_count": sample_count,
+            "required_samples": minimum,
+            "observation": observation,
+            "decision_reason": decision,
+            "meaning": meanings.get(rule_name, "该规则描述训练中的可观察稳定性现象。"),
+            "boundary": boundaries.get(rule_name, "该规则不能单独确定根因或任务效果。"),
+            "suggestions": suggestions.get(rule_name, []),
+        })
+        return evaluation
+
+    @staticmethod
     def _stability_payload(metrics: list, step_aggs: list) -> dict:
         config = StabilityConfig()
         report = run_stability_diagnosis(metrics, step_aggs, config)
@@ -276,10 +379,6 @@ class ExperimentStore:
         metric_names = set(report.metrics_available)
         evaluations = []
         for rule_name, rule_config in config.get_rule_configs().items():
-            alert = alerts_by_rule.get(rule_name)
-            if alert:
-                evaluations.append({"rule_name": rule_name, "status": "triggered", **alert})
-                continue
             required = set(rule_config.extra.get("metric_names", []))
             if rule_name == "reward_signal_degradation":
                 available = bool(step_aggs)
@@ -299,36 +398,39 @@ class ExperimentStore:
                     minimum = rule_config.window_size * rule_config.min_windows
                 elif rule_name == "kl_drift":
                     minimum = rule_config.baseline_window + rule_config.window_size * rule_config.min_windows
+
+            alert = alerts_by_rule.get(rule_name)
             early = None
-            if not rule_config.enabled:
-                status, reason = "not_evaluated", "rule_disabled"
-            elif not available:
-                status, reason = "not_evaluated", "required_metric_missing"
-            elif sample_count < minimum:
-                early = ExperimentStore._early_stability_observation(
-                    rule_name, rule_config, metrics, step_aggs,
-                )
-                if early is not None:
-                    status = "early_warning" if early["triggered"] else "early_observation"
-                    reason = f"early_window:{sample_count}/{minimum}"
-                else:
-                    status, reason = "not_evaluated", f"insufficient_samples:{sample_count}/{minimum}"
+            if alert:
+                evaluation = {"rule_name": rule_name, "status": "triggered", **alert}
             else:
-                status, reason = "not_triggered", "threshold_not_reached"
-            evaluation = {
-                "rule_name": rule_name,
-                "status": status,
-                "reason": reason,
-                "severity": "warning" if status == "early_warning" else "info",
-                "confidence": "low" if status.startswith("early_") else "standard",
-                "threshold": rule_config.threshold,
-                "window_size": rule_config.window_size,
-                "baseline_window": rule_config.baseline_window,
-                "config_version": config.config_version,
-            }
-            if early is not None:
-                evaluation.update({key: value for key, value in early.items() if key != "triggered"})
-            evaluations.append(evaluation)
+                if not rule_config.enabled:
+                    status, reason = "not_evaluated", "rule_disabled"
+                elif not available:
+                    status, reason = "not_evaluated", "required_metric_missing"
+                elif sample_count < minimum:
+                    early = ExperimentStore._early_stability_observation(rule_name, rule_config, metrics, step_aggs)
+                    if early is not None:
+                        status = "early_warning" if early["triggered"] else "early_observation"
+                        reason = "early_window"
+                    else:
+                        status, reason = "not_evaluated", "insufficient_samples"
+                else:
+                    status, reason = "not_triggered", "threshold_not_reached"
+                evaluation = {
+                    "rule_name": rule_name,
+                    "status": status,
+                    "reason": reason,
+                    "severity": "warning" if status == "early_warning" else "info",
+                    "confidence": "low" if status.startswith("early_") else "standard",
+                    "threshold": rule_config.threshold,
+                    "window_size": rule_config.window_size,
+                    "baseline_window": rule_config.baseline_window,
+                    "config_version": config.config_version,
+                }
+                if early is not None:
+                    evaluation.update({key: value for key, value in early.items() if key != "triggered"})
+            evaluations.append(ExperimentStore._stability_explanation(evaluation, sample_count, minimum))
         payload = report.to_dict()
         payload["evaluations"] = evaluations
         payload["rule_config"] = config.to_dict()
@@ -360,7 +462,9 @@ class ExperimentStore:
         status = self._infer_status(run_dir, latest_step, total_steps, log_tail)
         activity_mtime = self._activity_mtime(run_dir)
         started_mtime = min(log_path.stat().st_mtime, run_dir.stat().st_mtime)
-        labels = evaluate_experiment_rules(live["steps"], status, self.rule_config)
+        labels = evaluate_experiment_rules(
+            live["steps"], status, self.rule_config, self._error_summary(log_tail),
+        )
         latest = live["steps"][-1] if live["steps"] else {}
         progress_ratio = None
         if latest_step is not None and total_steps:

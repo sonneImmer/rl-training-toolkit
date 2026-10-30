@@ -244,12 +244,29 @@ function metricItem(label, value) {
   return `<div class="metric-item"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`;
 }
 
-function labelHtml(label) {
-  const threshold = label.threshold === undefined ? "" : ` · 阈值 ${number(label.threshold, 3)}`;
-  return `<div class="label-chip ${escapeHtml(label.severity)}">
-    <strong>${escapeHtml(label.title)}</strong>
-    <span>step ${label.first_step ?? "-"}-${label.last_step ?? "-"} · 当前 ${number(label.observed_value, 3)}${threshold}</span>
+function explanationRows(item) {
+  const suggestions = item.suggestions || [];
+  return `<div class="explanation-grid">
+    <div><span>观察到</span><p>${escapeHtml(item.observation || "暂无可展示证据")}</p></div>
+    <div><span>判断依据</span><p>${escapeHtml(item.decision_reason || "暂无")}</p></div>
+    <div><span>表示什么</span><p>${escapeHtml(item.meaning || "暂无")}</p></div>
+    <div><span>不能说明</span><p>${escapeHtml(item.boundary || "暂无")}</p></div>
+    ${suggestions.length ? `<div class="suggestion-row"><span>建议检查</span><p>${suggestions.map((text) => escapeHtml(text)).join(" ")}</p></div>` : ""}
   </div>`;
+}
+
+function evidenceButton(steps) {
+  if (!steps?.length) return "";
+  const target = steps.at(-1);
+  return `<button class="evidence-step-button" type="button" data-step="${escapeHtml(target)}">查看 Step ${steps.join("、")} 的 Rollout</button>`;
+}
+
+function labelHtml(label) {
+  return `<article class="diagnosis-card ${escapeHtml(label.severity)}">
+    <div class="diagnosis-header"><strong>${escapeHtml(label.title)}</strong><span>证据 Step ${escapeHtml((label.evidence_steps || []).join("、") || "-")}</span></div>
+    ${explanationRows(label)}
+    ${evidenceButton(label.evidence_steps)}
+  </article>`;
 }
 
 function configCell(label, value) {
@@ -264,39 +281,31 @@ function manifestValue(manifest, section, key) {
   return manifest?.[section]?.[key] ?? "未记录";
 }
 
-function readinessHtml(item) {
+function readinessInlineHtml(item) {
   const readiness = item.comparison_readiness || {};
   const ready = readiness.status === "ready";
   const missing = readiness.missing_fields || [];
-  const missingText = missing.length ? `缺少：${missing.join("、")}` : "关键条件已记录";
-  return `<div class="readiness ${ready ? "ready" : "incomplete"}">
-    <strong>${ready ? "具备算法对比条件" : "暂不具备严格对比条件"}</strong>
-    <span>${escapeHtml(missingText)}</span>
-  </div>`;
+  const text = ready ? "对比配置完整" : `对比配置缺少 ${missing.length} 项`;
+  const detail = ready ? "算法、模型、数据、Reward、训练预算与版本信息已记录" : `缺少：${missing.join("、")}`;
+  return `<span class="readiness-inline ${ready ? "ready" : "incomplete"}" title="${escapeHtml(detail)}">${escapeHtml(text)}</span>`;
 }
 
 function ruleStatusHtml(item) {
-  const names = { triggered: "已触发", not_triggered: "未触发", not_evaluated: "未评估", early_observation: "早期正常", early_warning: "早期预警" };
-  const ruleNames = {
-    explore_collapse: "探索能力收缩", kl_drift: "KL 漂移", clip_saturation: "裁剪饱和",
-    gradient_spike: "梯度尖峰", output_truncation: "输出截断", reward_signal_degradation: "奖励信号退化",
-    performance_degradation: "训练性能下降",
-  };
-  const detail = [
-    item.reason ? `原因：${item.reason}` : "",
-    item.description ? `说明：${item.description}` : "",
-    item.metric_name ? `指标：${item.metric_name}` : "",
-    item.trigger_value !== undefined ? `当前窗口：${number(item.trigger_value, 6)}` : "",
-    item.baseline_value !== undefined ? `基线窗口：${number(item.baseline_value, 6)}` : "",
-    item.threshold !== undefined ? `阈值：${number(item.threshold, 6)}` : "",
-    item.window_size !== undefined ? `窗口大小：${item.window_size}` : "",
-    item.baseline_window !== undefined ? `基线长度：${item.baseline_window}` : "",
-    item.window_steps?.length ? `证据 step：${item.window_steps.join(", ")}` : "",
-    item.confidence === "low" ? "置信度：低（短实验，仅供观察）" : "",
-  ].filter(Boolean);
-  return `<details class="rule-row ${escapeHtml(item.status)}"><summary><strong>${escapeHtml(ruleNames[item.rule_name] || item.rule_name)}</strong><span>${escapeHtml(names[item.status] || item.status)}</span><small>${escapeHtml(item.reason || item.description || "点击展开详情")}</small></summary><div class="rule-detail">${detail.map((line) => `<div>${escapeHtml(line)}</div>`).join("") || "暂无更多信息"}</div></details>`;
+  const names = { triggered: "已触发", not_triggered: "当前未触发", early_observation: "早期观察", early_warning: "早期预警" };
+  return `<article class="diagnosis-card rule-card ${escapeHtml(item.status)}">
+    <div class="diagnosis-header"><strong>${escapeHtml(item.title || item.rule_name)}</strong><span>${escapeHtml(names[item.status] || item.status)}</span></div>
+    ${explanationRows(item)}
+    ${evidenceButton(item.window_steps)}
+  </article>`;
 }
 
+function stabilityHtml(evaluations) {
+  const visible = evaluations.filter((item) => item.status !== "not_evaluated");
+  const unavailable = evaluations.filter((item) => item.status === "not_evaluated");
+  const cards = visible.map(ruleStatusHtml).join("");
+  const unavailableHtml = unavailable.length ? `<details class="unavailable-rules"><summary>暂不能判断的规则（${unavailable.length}）</summary><div>${unavailable.map((item) => `<p><strong>${escapeHtml(item.title || item.rule_name)}</strong><span>${escapeHtml(item.observation)}</span></p>`).join("")}</div></details>` : "";
+  return cards + unavailableHtml || '<span class="no-labels">暂无稳定性评估数据。</span>';
+}
 function experimentOptions(selectedId) {
   return state.experiments.map((item) => `<option value="${escapeHtml(item.experiment_id)}" ${item.experiment_id === selectedId ? "selected" : ""}>${escapeHtml(item.name || item.experiment_id)}</option>`).join("");
 }
@@ -336,16 +345,9 @@ function renderDetail() {
       <div class="section-content evaluation-list">${(item.evaluation_alerts || []).map(evaluationAlertHtml).join("")}${(item.evaluations || []).map(evaluationHtml).join("") || '<span class="no-labels">尚未关联独立评测结果。</span>'}</div>
     </section>
 
-    <section class="section-band">
-      <div class="section-heading"><h3>实验可信度</h3><span>配置完整性</span></div>
-      <div class="section-content">
-        ${readinessHtml(item)}
-        <p class="muted-note">对比资格要求记录算法、模型、数据集、Reward 定义与范围、随机种子、训练预算、镜像和代码版本。</p>
-      </div>
-    </section>
 
     <section class="section-band">
-      <div class="section-heading"><h3>实时事实标签</h3><span>规则版本 ${escapeHtml(item.rule_version)}</span></div>
+      <div class="section-heading"><h3>训练现象</h3><span>规则版本 ${escapeHtml(item.rule_version)}</span></div>
       <div class="section-content labels">${labels.length ? labels.map(labelHtml).join("") : '<span class="no-labels">当前没有规则被触发</span>'}</div>
     </section>
 
@@ -375,8 +377,8 @@ function renderDetail() {
     </section>
 
     <section class="section-band">
-      <div class="section-heading"><h3>稳定性规则</h3><span>${escapeHtml(stability.config_version || "-")}</span></div>
-      <div class="section-content rule-list">${(stability.evaluations || []).map(ruleStatusHtml).join("") || '<span class="no-labels">暂无稳定性评估数据。</span>'}</div>
+      <div class="section-heading"><h3>稳定性判断</h3><span>${escapeHtml(stability.config_version || "-")}</span></div>
+      <div class="section-content rule-list">${stabilityHtml(stability.evaluations || [])}</div>
     </section>
 
     <section class="section-band">
@@ -392,7 +394,7 @@ function renderDetail() {
     </section>
 
     <section class="section-band">
-      <div class="section-heading"><h3>运行配置</h3><span>日志与实验清单</span></div>
+      <div class="section-heading"><h3>运行配置</h3>${readinessInlineHtml(item)}</div>
       <div class="section-content config-grid">
         ${configCell("算法", item.config.algorithm || "未记录")}${configCell("模型", item.config.model || "未记录")}${configCell("数据集", item.config.dataset || "未记录")}
         ${configCell("领域", manifestValue(item.run_manifest, "task", "domain"))}${configCell("任务", manifestValue(item.run_manifest, "task", "type"))}${configCell("输入维度", manifestValue(item.run_manifest, "dataset", "feature_count"))}
@@ -410,8 +412,7 @@ function renderDetail() {
         <div id="comparisonContent" class="comparison-content"><span class="no-labels">选择另一个实验后查看参数和指标差异。</span></div>
       </div>
     </section>
-
-    <section class="section-band">
+    <section id="rolloutEvidenceSection" class="section-band">
       <div class="section-heading">
         <h3>Rollout 证据</h3>
         <div class="rollout-toolbar"><input id="rolloutStep" type="number" min="1" value="${progress.current_step ?? ""}" placeholder="step"><button id="loadRollouts" type="button">读取</button></div>
@@ -420,6 +421,11 @@ function renderDetail() {
     </section>`;
 
   el("loadRollouts").addEventListener("click", loadRollouts);
+  document.querySelectorAll(".evidence-step-button").forEach((button) => button.addEventListener("click", async () => {
+    el("rolloutStep").value = button.dataset.step;
+    el("rolloutEvidenceSection").scrollIntoView({ behavior: "smooth", block: "start" });
+    await loadRollouts();
+  }));
   el("compareButton").addEventListener("click", loadComparison);
   drawCharts(rows);
 }

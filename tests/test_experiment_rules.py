@@ -15,6 +15,11 @@ def _row(step, **overrides):
         "mixed_groups": 1,
         "mostly_wrong_groups": 0,
         "all_wrong_groups": 0,
+        "analyzable_groups": 4,
+        "constant_score_groups": 0,
+        "near_constant_groups": 0,
+        "effective_groups": 4,
+        "low_information_group_ratio": 0.0,
     }
     row.update(overrides)
     return row
@@ -28,25 +33,41 @@ def test_window_rules_require_consecutive_steps():
     rows.append(_row(3, clip_ratio=0.4))
     rows.append(_row(4, clip_ratio=0.5))
     labels = evaluate_experiment_rules(rows, "running")
-    assert "high_truncation" in {label["name"] for label in labels}
+    label = next(item for item in labels if item["name"] == "high_truncation")
+    assert label["observation"]
+    assert label["decision_reason"]
+    assert label["meaning"]
+    assert label["boundary"]
+    assert label["suggestions"]
 
 
-def test_low_group_signal_is_observation_only():
+def test_low_group_signal_uses_reward_separation_evidence():
+    rows = [
+        _row(1, constant_score_groups=3, near_constant_groups=1, low_information_group_ratio=1.0),
+        _row(2, constant_score_groups=3, near_constant_groups=1, low_information_group_ratio=1.0),
+    ]
+    labels = evaluate_experiment_rules(rows, "running")
+    label = next(item for item in labels if item["name"] == "low_group_signal")
+    assert label["metric"] == "low_information_group_ratio"
+    assert label["evidence"][0] == {"step": 1, "value": 1.0, "numerator": 4, "denominator": 4}
+    assert "4/4" in label["observation"]
+    assert "全对或全错" in label["boundary"]
+
+
+def test_all_correct_or_all_wrong_does_not_imply_low_reward_signal():
     rows = [
         _row(1, all_correct_groups=4, mixed_groups=0),
         _row(2, all_wrong_groups=4, all_correct_groups=0, mixed_groups=0),
     ]
     labels = evaluate_experiment_rules(rows, "running")
-    label = next(item for item in labels if item["name"] == "low_group_signal")
-    assert label["metric"] == "constant_group_ratio"
-    assert "difficulty" not in label
+    assert "low_group_signal" not in {label["name"] for label in labels}
 
 
-def test_completed_with_errors_gets_specific_label():
-    labels = evaluate_experiment_rules([_row(2)], "completed_with_errors")
-    names = {label["name"] for label in labels}
-    assert "post_training_error" in names
-    assert "experiment_failed" not in names
+def test_completed_with_errors_gets_specific_label_and_log_summary():
+    labels = evaluate_experiment_rules([_row(2)], "completed_with_errors", error_summary="RuntimeError: cleanup failure")
+    label = next(item for item in labels if item["name"] == "post_training_error")
+    assert "cleanup failure" in label["observation"]
+    assert "experiment_failed" not in {item["name"] for item in labels}
 
 
 def test_custom_thresholds_are_applied():
