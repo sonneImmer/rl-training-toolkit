@@ -16,6 +16,8 @@ def test_export_excludes_checkpoints_and_imports_dashboard_files(tmp_path):
     (run / "train.log").write_text("Training completed\n", encoding="utf-8")
     (run / "run_manifest.json").write_text("{}\n", encoding="utf-8")
     (run / "rollouts" / "step_1.jsonl").write_text('{"reward": 4}\n', encoding="utf-8")
+    (run / "evaluations" / "step-1").mkdir(parents=True)
+    (run / "evaluations" / "step-1" / "metrics.json").write_text('{"accuracy": 0.5}\n', encoding="utf-8")
     (run / "checkpoints" / "model.safetensors").write_bytes(b"weights")
     archive = tmp_path / "bundle.tar.gz"
 
@@ -31,6 +33,7 @@ def test_export_excludes_checkpoints_and_imports_dashboard_files(tmp_path):
     restored_run = restored / "exp" / "attempt"
     assert (restored_run / "train.log").read_text(encoding="utf-8") == "Training completed\n"
     assert not (restored_run / "checkpoints").exists()
+    assert (restored_run / "evaluations" / "step-1" / "metrics.json").is_file()
 
 
 def test_manifest_is_json_and_contains_checksums(tmp_path):

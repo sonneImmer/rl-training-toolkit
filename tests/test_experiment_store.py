@@ -140,3 +140,51 @@ def test_run_manifest_controls_comparison_readiness(tmp_path):
     assert indexed["comparison_readiness"]["eligible"] is True
     persisted = json.loads((tmp_path / "state" / "experiments" / snapshot["experiment_id"] / "manifest.json").read_text())
     assert persisted["comparison_readiness"]["status"] == "ready"
+
+
+def test_independent_evaluations_are_attached_to_experiment(tmp_path):
+    run_dir = tmp_path / "runs" / "run-001"
+    evaluation_dir = run_dir / "evaluations" / "checkpoint-step-5"
+    evaluation_dir.mkdir(parents=True)
+    (run_dir / "train.log").write_text("step:5 - critic/score/mean:1.0\n")
+    (evaluation_dir / "metrics.json").write_text(json.dumps({
+        "samples": 20,
+        "risk": {"accuracy": 0.9, "recall": 0.8, "false_negative": 2},
+        "per_typology": {"FAN_OUT": {"samples": 5, "correct": 4, "accuracy": 0.8}},
+    }))
+    (evaluation_dir / "evaluation_manifest.json").write_text(json.dumps({
+        "evaluation_id": "checkpoint-step-5", "checkpoint_step": 5, "split": "test",
+    }))
+
+    snapshot = ExperimentStore(tmp_path / "runs", tmp_path / "state").refresh_all()[0]
+
+    assert snapshot["evaluations"][0]["checkpoint_step"] == 5
+    assert snapshot["evaluations"][0]["summary"]["risk_accuracy"] == 0.9
+    assert snapshot["evaluations"][0]["per_class"]["FAN_OUT"]["accuracy"] == 0.8
+    indexed = ExperimentStore(tmp_path / "runs", tmp_path / "state").list_experiments()[0]
+    assert indexed["evaluation_count"] == 1
+    assert snapshot["evaluation_alerts"] == []
+
+
+def test_independent_evaluation_detects_overall_up_class_down(tmp_path):
+    run_dir = tmp_path / "runs" / "run-001"
+    run_dir.mkdir(parents=True)
+    (run_dir / "train.log").write_text("step:2 - critic/score/mean:1.0\n")
+    for step, overall, fan_out in ((1, 0.90, 0.95), (2, 0.96, 0.80)):
+        evaluation_dir = run_dir / "evaluations" / f"step-{step}"
+        evaluation_dir.mkdir(parents=True)
+        (evaluation_dir / "metrics.json").write_text(json.dumps({
+            "risk": {"accuracy": overall},
+            "per_typology": {"FAN_OUT": {"samples": 20, "correct": int(20 * fan_out), "accuracy": fan_out}},
+        }))
+        (evaluation_dir / "evaluation_manifest.json").write_text(json.dumps({
+            "evaluation_id": f"step-{step}", "checkpoint_step": step,
+        }))
+
+    snapshot = ExperimentStore(tmp_path / "runs", tmp_path / "state").refresh_all()[0]
+
+    alert = snapshot["evaluation_alerts"][0]
+    assert alert["type"] == "overall_up_class_down"
+    assert alert["class_name"] == "FAN_OUT"
+    assert alert["overall_after"] == 0.96
+    assert alert["class_after"] == 0.80

@@ -58,14 +58,66 @@ function rolloutGroupsHtml(records) {
     const signal = advantages.length ? `正 ${positive} · 负 ${negative} · 零 ${zero}` : "Advantage 未记录";
     return `<details class="rollout-group">
       <summary><strong>Group #${groupIndex + 1}</strong><span>${group.records.length} responses</span><span>${signal}</span></summary>
-      <div class="rollout-group-body">${group.records.map((record, index) => `<details class="rollout-item">
-        <summary><strong>#${index + 1}</strong><span>reward ${escapeHtml(record.score ?? record.reward ?? "-")}</span><span>adv ${escapeHtml(record.advantage ?? "-")}</span><span>${escapeHtml(advantageDirection(record.advantage))}</span><span>acc ${escapeHtml(record.acc ?? "-")}</span><span>pred ${escapeHtml(record.pred ?? "-")}</span></summary>
+      <div class="rollout-group-body">${groupComponentHtml(group.records)}${group.records.map((record, index) => `<details class="rollout-item">
+        <summary><strong>#${index + 1}</strong><span>reward ${escapeHtml(record.score ?? record.reward ?? "-")}</span><span>adv ${escapeHtml(record.advantage ?? "-")}</span><span>${escapeHtml(advantageDirection(record.advantage))}</span><span>${escapeHtml(selectionText(record))}</span><span>acc ${escapeHtml(record.acc ?? "-")}</span><span>pred ${escapeHtml(record.pred ?? "-")}</span></summary>
+        ${responseComponentsHtml(record)}
+        <div class="selection-evidence"><span>response mask token ${record.response_mask_tokens ?? "未记录"}</span><span>policy signal token ${record.policy_signal_tokens ?? "未记录"}</span></div>
         <pre>${escapeHtml(`PROMPT\n${record.input ?? record.prompt ?? ""}\n\nOUTPUT\n${record.output ?? record.response ?? ""}`)}</pre>
       </details>`).join("")}</div>
     </details>`;
   }).join("");
 }
 
+
+function selectionText(record) {
+  if (record.selected_for_update === null || record.selected_for_update === undefined) return "更新状态未记录";
+  return record.selected_for_update ? "已进入 Actor 更新批次" : "未进入 Actor 更新批次";
+}
+
+function componentValue(component) {
+  if (component && typeof component === "object") {
+    const value = component.weighted ?? component.score ?? component.raw;
+    return typeof value === "number" ? value : null;
+  }
+  return typeof component === "number" ? component : null;
+}
+
+function groupComponentHtml(records) {
+  const values = new Map();
+  records.forEach((record) => Object.entries(record.reward_components || {}).forEach(([name, component]) => {
+    const value = componentValue(component);
+    if (value === null) return;
+    const items = values.get(name) || [];
+    items.push(value);
+    values.set(name, items);
+  }));
+  if (!values.size) return '<div class="component-note">Reward 分量未记录</div>';
+  return `<div class="component-grid">${[...values.entries()].map(([name, items]) => {
+    const low = Math.min(...items); const high = Math.max(...items);
+    const signal = high - low > 1e-8 ? "有组内区分" : "组内无区分";
+    return `<div class="component-chip"><span>${escapeHtml(name)}</span><strong>${number(low, 3)} ~ ${number(high, 3)}</strong><small>${signal}</small></div>`;
+  }).join("")}</div>`;
+}
+
+function responseComponentsHtml(record) {
+  const entries = Object.entries(record.reward_components || {});
+  if (!entries.length) return "";
+  return `<div class="response-components">${entries.map(([name, component]) => `<span><b>${escapeHtml(name)}</b> ${escapeHtml(number(componentValue(component), 3))}</span>`).join("")}</div>`;
+}
+
+function evaluationAlertHtml(alert) {
+  return `<div class="evaluation-alert"><strong>总体上升但单类下降</strong><span>step ${alert.from_step} → ${alert.to_step}：${escapeHtml(alert.metric)} ${percent(alert.overall_before)} → ${percent(alert.overall_after)}，${escapeHtml(alert.class_name)} ${percent(alert.class_before)} → ${percent(alert.class_after)}</span></div>`;
+}
+
+function evaluationHtml(evaluation) {
+  const summary = evaluation.summary || {};
+  const percentKeys = new Set(["risk_accuracy", "risk_precision", "risk_recall", "risk_f1", "risk_f2", "typology_accuracy", "format_valid_rate", "evidence_f1", "accuracy", "precision", "recall", "f1", "f2"]);
+  const summaryCards = Object.entries(summary).map(([key, value]) => diagnosticMetric(key, percentKeys.has(key) ? percent(value) : value)).join("");
+  const perClass = Object.entries(evaluation.per_class || {});
+  return `<details class="evaluation-item" open><summary><strong>${escapeHtml(evaluation.evaluation_id)}</strong><span>checkpoint step ${evaluation.checkpoint_step ?? "未记录"}</span><span>${escapeHtml(evaluation.split || "test")}</span></summary>
+    <div class="evaluation-body"><div class="diagnostic-grid">${summaryCards || diagnosticMetric("状态", "暂无摘要")}</div>
+    ${perClass.length ? `<div class="table-scroll"><table class="facts-table"><thead><tr><th>类别</th><th>样本</th><th>正确</th><th>准确率</th></tr></thead><tbody>${perClass.map(([name, row]) => `<tr><td>${escapeHtml(name)}</td><td>${row.samples ?? "-"}</td><td>${row.correct ?? "-"}</td><td>${percent(row.accuracy)}</td></tr>`).join("")}</tbody></table></div>` : ""}</div></details>`;
+}
 
 function compact(value) {
   if (!value) return "-";
@@ -277,6 +329,11 @@ function renderDetail() {
       ${metricItem("正奖励", percent(latest.positive_ratio))}
       ${metricItem("截断率", percent(latest.clip_ratio))}
       ${metricItem("梯度范数", number(latest.grad_norm, 4))}
+    </section>
+
+    <section class="section-band">
+      <div class="section-heading"><h3>独立评测</h3><span>${(item.evaluations || []).length} 个结果 · 不使用训练 Rollout 代替</span></div>
+      <div class="section-content evaluation-list">${(item.evaluation_alerts || []).map(evaluationAlertHtml).join("")}${(item.evaluations || []).map(evaluationHtml).join("") || '<span class="no-labels">尚未关联独立评测结果。</span>'}</div>
     </section>
 
     <section class="section-band">

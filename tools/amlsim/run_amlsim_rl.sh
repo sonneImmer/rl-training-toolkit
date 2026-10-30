@@ -59,7 +59,7 @@ manifest = {
     "model": {"id": os.environ.get("MODEL_PATH", "/mnt/model")},
     "training": {"algorithm": os.environ.get("ADV_ESTIMATOR", "grpo"), "seed": int(os.environ.get("RANDOM_SEED", "42")), "total_steps": int(os.environ.get("TOTAL_STEPS", "5"))},
     "resources": {"npu_count": int(os.environ["DEVICE_COUNT"]), "visible_devices": os.environ.get("ASCEND_RT_VISIBLE_DEVICES", "").split(",")},
-    "environment": {"image": os.environ.get("IMAGE_NAME", "unknown"), "image_id": "d2a7a76de939-derived", "patch_revision": "rollout-json-mathfix", "code_revision": os.environ.get("CODE_REVISION", "unknown")},
+    "environment": {"image": os.environ.get("IMAGE_NAME", "unknown"), "image_id": "d2a7a76de939-derived", "patch_revision": "rollout-evidence-v3", "code_revision": os.environ.get("CODE_REVISION", "unknown")},
 }
 Path(sys.argv[1]).write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
 PY_MANIFEST

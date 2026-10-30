@@ -39,6 +39,14 @@ python3 patch_tools/patch_verl_rollout_evidence.py check \
 
 `advantage` 是进入 Policy Loss 的相对学习方向，不等同于该 Group 的实际梯度。历史 rollout 没有该字段时，UI 显示“未记录”，不会根据 Reward 反推。仓库中的 RL 启动脚本已经自动应用此补丁。
 
+新版证据补丁还记录：
+
+- `selected_for_update`：该 Response 是否进入调用 `update_actor` 的批次；
+- `response_mask_tokens`：参与 Actor loss mask 的 Response token 数；
+- `policy_signal_tokens`：Advantage 非零且未被 Response mask 屏蔽的 token 数。
+
+`policy_signal_tokens=0` 表示没有策略梯度信号，但开启 KL loss 时仍可能存在 KL 梯度，因此不能解释为“完全没有任何梯度”。Reward 函数返回的 `reward_components` 会按原始结构保留，并在 UI 中展示各分量是否具有组内区分度。
+
 ## NGRPO 运行时补丁
 
 对于 `openpangu-72b-2512-postrain:v1`，推荐直接应用基于该镜像原始 VERL 文件生成的完整补丁：
@@ -127,6 +135,22 @@ export CODE_REVISION=$(git rev-parse HEAD)
 ```
 
 看板使用清单展示任务、Reward、资源和版本，并检查实验是否具备严格算法对比所需的配置记录。旧实验没有清单时显示“未记录”，不会猜测缺失信息。
+
+## 独立评测接入
+
+独立测试完成后，将 `metrics.json` 挂到对应训练运行目录：
+
+```bash
+python3 tools/attach_evaluation.py \
+  --run-dir /path/to/run \
+  --metrics /path/to/evaluation/metrics.json \
+  --evaluation-id checkpoint-step-5 \
+  --checkpoint-step 5 \
+  --split test \
+  --dataset dataset_version
+```
+
+看板会同时展示训练 Rollout 与固定测试集结果。若相邻 checkpoint 的总体指标上升、但某个类别准确率下降至少 5 个百分点，会触发“总体上升但单类下降”告警。该功能只读取已有评测结果，不负责合并或运行 checkpoint。
 
 ## 实验材料导出与本地查看
 

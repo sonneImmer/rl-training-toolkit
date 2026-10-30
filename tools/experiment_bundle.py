@@ -15,7 +15,7 @@ from pathlib import Path, PurePosixPath
 
 SCHEMA_VERSION = "rl-experiment-bundle-v1"
 ALLOWED_ROOT_FILES = {"train.log", "run_manifest.json", "audit.json"}
-ALLOWED_DIRS = {"rollouts", "diagnosis", "diagnostics", "report_materials", "preflight"}
+ALLOWED_DIRS = {"rollouts", "diagnosis", "diagnostics", "report_materials", "preflight", "evaluations"}
 ARCHIVE_RUNS_PREFIX = PurePosixPath("rl_experiment_bundle/runs")
 
 

@@ -172,6 +172,24 @@ class TestParseRolloutDir:
         assert groups[0].advantages == [0.75, -0.75]
         assert groups[0].advantage_estimator == "grpo"
 
+    def test_reward_components_and_update_evidence_extraction(self, tmp_path):
+        rollout_dir = tmp_path / "rollouts"
+        rollout_dir.mkdir()
+        record = {
+            "input": "question", "output": "answer", "score": 2.0, "uid": "group-1",
+            "reward_components": {"outcome": {"weighted": 1.0}, "format": {"weighted": 1.0}},
+            "selected_for_update": True, "response_mask_tokens": 12, "policy_signal_tokens": 8,
+        }
+        (rollout_dir / "1.jsonl").write_text(json.dumps(record) + "\n")
+
+        rollouts, groups, _ = parse_rollout_dir(str(rollout_dir), EXP_ID)
+
+        assert rollouts[0].reward_components["outcome"]["weighted"] == 1.0
+        assert rollouts[0].selected_for_update is True
+        assert rollouts[0].response_mask_tokens == 12
+        assert rollouts[0].policy_signal_tokens == 8
+        assert groups[0].selected_for_update == [True]
+
     def test_content_fingerprint_deterministic(self):
         """Content fingerprint should be deterministic."""
         fp1 = content_fingerprint("hello world")

@@ -78,3 +78,6 @@ def test_rollout_evidence_patcher_records_advantage(tmp_path):
     patched = path.read_text()
     assert 'reward_extra_infos_to_dump["advantage"] = advantages' in patched
     assert 'batch.batch["advantages"]' in patched
+    assert 'reward_extra_infos_to_dump["selected_for_update"] = selected_for_update' in patched
+    assert 'reward_extra_infos_to_dump["response_mask_tokens"] = response_mask_tokens' in patched
+    assert 'reward_extra_infos_to_dump["policy_signal_tokens"] = policy_signal_tokens' in patched

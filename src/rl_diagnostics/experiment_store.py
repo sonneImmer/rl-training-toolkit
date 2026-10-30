@@ -18,6 +18,7 @@ from .analyzers.rollout_quality import assess_rollout_quality
 from .analyzers.stability_analyzer import run_stability_diagnosis
 from .config.stability_config import StabilityConfig
 from .experiment_rules import RULE_VERSION, RuleConfig, evaluate_experiment_rules, rule_config_dict
+from .evaluation_store import find_evaluation_tradeoffs, load_evaluations
 from .live_monitor import build_snapshot, latest_rollouts
 from .parsers.log_parser import parse_log
 from .parsers.rollout_parser import parse_rollout_dir
@@ -376,6 +377,7 @@ class ExperimentStore:
             "total_training_steps": total_steps,
         }
         comparison_readiness = self._comparison_readiness(run_manifest, parsed_config)
+        evaluations = load_evaluations(run_dir)
 
         snapshot = {
             "schema_version": "1.0.0",
@@ -408,11 +410,14 @@ class ExperimentStore:
                 "missing_required": parse_report.missing_required,
             },
             "diagnostics": diagnostics,
+            "evaluations": evaluations,
+            "evaluation_alerts": find_evaluation_tradeoffs(evaluations),
             "artifacts": {
                 "train_log": str(log_path),
                 "rollout_dir": str(rollout_dir),
                 "diagnostics_dir": str(run_dir / "diagnostics"),
                 "report_materials_dir": str(run_dir / "report_materials"),
+                "evaluations_dir": str(run_dir / "evaluations"),
             },
         }
 
@@ -493,6 +498,8 @@ class ExperimentStore:
             "progress": item.get("progress", {}),
             "labels": item.get("labels", []),
             "latest_metrics": latest,
+            "evaluation_count": len(item.get("evaluations", [])),
+            "latest_evaluation": item.get("evaluations", [])[-1].get("summary", {}) if item.get("evaluations") else {},
             "rule_version": item.get("rule_version"),
         }
 

@@ -61,6 +61,23 @@ def _extract_advantage(record: dict[str, Any], idx: int = 0) -> Optional[float]:
     return float(val) if _is_finite_number(val) else None
 
 
+def _extract_object_field(record: dict[str, Any], key: str, idx: int = 0) -> dict[str, Any]:
+    """Extract a JSON object from scalar or per-response array form."""
+    value = record.get(key)
+    if isinstance(value, list):
+        value = value[idx] if idx < len(value) else None
+    return value if isinstance(value, dict) else {}
+
+
+def _extract_int_field(record: dict[str, Any], key: str, idx: int = 0) -> Optional[int]:
+    value = record.get(key)
+    if isinstance(value, list):
+        value = value[idx] if idx < len(value) else None
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    return int(value)
+
+
 def _extract_str_field(record: dict[str, Any], keys: list[str], idx: int = 0) -> Optional[str]:
     """Extract a string field from a record, handling scalar and array forms."""
     for key in keys:
@@ -150,6 +167,10 @@ def _parse_single_record(
     reward = _extract_reward(record, record_idx)
     advantage = _extract_advantage(record, record_idx)
     advantage_estimator = _extract_str_field(record, ["adv_estimator", "advantage_estimator"], record_idx)
+    reward_components = _extract_object_field(record, "reward_components", record_idx)
+    selected_for_update = _extract_bool_field(record, ["selected_for_update"], record_idx)
+    response_mask_tokens = _extract_int_field(record, "response_mask_tokens", record_idx)
+    policy_signal_tokens = _extract_int_field(record, "policy_signal_tokens", record_idx)
     prediction = _extract_str_field(record, ["pred", "prediction"], record_idx)
     verifier_correct = _extract_bool_field(record, ["acc", "correct", "is_correct"], record_idx)
     ground_truth = _extract_str_field(record, ["gts", "ground_truth"], record_idx)
@@ -215,6 +236,10 @@ def _parse_single_record(
         reward_source="training",
         advantage=advantage,
         advantage_estimator=advantage_estimator,
+        reward_components=reward_components,
+        selected_for_update=selected_for_update,
+        response_mask_tokens=response_mask_tokens,
+        policy_signal_tokens=policy_signal_tokens,
         prediction=prediction,
         verifier_correct=verifier_correct,
         ground_truth=ground_truth,
@@ -383,6 +408,7 @@ def parse_rollout_dir(
         for gid, rollouts in group_data.items():
             rewards = [r.training_reward for r in rollouts if r.training_reward is not None]
             advantages = [r.advantage for r in rollouts]
+            selected_for_update = [r.selected_for_update for r in rollouts]
             responses = [r.response for r in rollouts]
             rollout_ids = [r.rollout_id for r in rollouts]
             
@@ -404,6 +430,7 @@ def parse_rollout_dir(
                 rewards=rewards,
                 advantages=advantages,
                 advantage_estimator=first.advantage_estimator if first else None,
+                selected_for_update=selected_for_update,
                 responses=responses,
                 rollout_ids=rollout_ids,
                 source_file=filepath,

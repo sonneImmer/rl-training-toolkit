@@ -69,6 +69,18 @@ rl-dashboard \
   --host 0.0.0.0 --port 8765
 ```
 
+## Attach checkpoint evaluation evidence
+
+```bash
+python3 tools/attach_evaluation.py \
+  --run-dir /path/to/run \
+  --metrics /path/to/metrics.json \
+  --evaluation-id checkpoint-step-5 \
+  --checkpoint-step 5
+```
+
+Evaluation files under the run's `evaluations/` directory are included in portable experiment bundles.
+
 ## Move experiment evidence to another machine
 
 Create a portable archive without checkpoints or model weights:

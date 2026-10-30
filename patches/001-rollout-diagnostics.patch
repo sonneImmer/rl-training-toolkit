@@ -1,23 +1,6 @@
 --- a/verl/trainer/ppo/ray_trainer.py
 +++ b/verl/trainer/ppo/ray_trainer.py
-@@ -449,6 +449,7 @@
-             "gts": gts,
-             "score": scores,
-             "step": [self.global_steps] * n,
-+            "rollout_id": list(range(n)),
-         }
- 
-         for k, v in reward_extra_infos_dict.items():
-@@ -466,7 +467,7 @@
-         print(f"Dumped generations to {filename}")
- 
-     def _log_rollout_data(
--        self, batch: DataProto, reward_extra_infos_dict: dict, timing_raw: dict, rollout_data_dir: str
-+        self, batch: DataProto, reward_extra_infos_dict: dict, timing_raw: dict, rollout_data_dir: str,
-     ):
-         """Log rollout data to disk.
-         Args:
-@@ -479,9 +480,21 @@
+@@ -480,6 +480,16 @@
              inputs = self.tokenizer.batch_decode(batch.batch["prompts"], skip_special_tokens=True)
              outputs = self.tokenizer.batch_decode(batch.batch["responses"], skip_special_tokens=True)
              scores = batch.batch["token_level_scores"].sum(-1).cpu().tolist()
@@ -25,16 +8,23 @@
 +                (batch.batch["advantages"] * batch.batch["response_mask"]).sum(-1)
 +                / batch.batch["response_mask"].sum(-1).clamp_min(1)
 +            ).detach().cpu().tolist()
++            response_mask_tokens = batch.batch["response_mask"].sum(-1).detach().cpu().tolist()
++            policy_signal_tokens = (
++                (batch.batch["advantages"].abs() > 1e-8) & batch.batch["response_mask"].bool()
++            ).sum(-1).detach().cpu().tolist()
++            actor_update_enabled = self.config.trainer.critic_warmup <= self.global_steps
++            selected_for_update = [bool(actor_update_enabled and tokens > 0) for tokens in response_mask_tokens]
              sample_gts = [item.non_tensor_batch.get("reward_model", {}).get("ground_truth", None) for item in batch]
  
-+            # Extract diagnostic metadata for group recovery
-+            uid_list = batch.non_tensor_batch.get("uid", np.array([""] * len(inputs))).tolist() if "uid" in batch.non_tensor_batch else [""] * len(inputs)
-+            data_source_list = batch.non_tensor_batch.get("data_source", np.array([""] * len(inputs))).tolist() if "data_source" in batch.non_tensor_batch else [""] * len(inputs)
-+
+             # Extract diagnostic metadata for group recovery
+@@ -489,6 +499,11 @@
              reward_extra_infos_to_dump = reward_extra_infos_dict.copy()
-+            reward_extra_infos_to_dump["uid"] = uid_list
-+            reward_extra_infos_to_dump["data_source"] = data_source_list
+             reward_extra_infos_to_dump["uid"] = uid_list
+             reward_extra_infos_to_dump["data_source"] = data_source_list
 +            reward_extra_infos_to_dump["advantage"] = advantages
++            reward_extra_infos_to_dump["selected_for_update"] = selected_for_update
++            reward_extra_infos_to_dump["response_mask_tokens"] = response_mask_tokens
++            reward_extra_infos_to_dump["policy_signal_tokens"] = policy_signal_tokens
 +            reward_extra_infos_to_dump["adv_estimator"] = [str(self.config.algorithm.adv_estimator)] * len(inputs)
              if "request_id" in batch.non_tensor_batch:
                  reward_extra_infos_dict.setdefault(

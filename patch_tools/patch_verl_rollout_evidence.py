@@ -10,7 +10,7 @@ import shutil
 from pathlib import Path
 
 
-MARKER = "zkx-rollout-evidence-patch-v2"
+MARKER = "zkx-rollout-evidence-patch-v3"
 
 
 def sha256(path: Path) -> str:
@@ -57,6 +57,7 @@ def patch_checks(files: dict[str, Path]) -> dict[str, bool]:
         "rollout_id": "\"rollout_id\": list(range(n))" in text,
         "group_metadata": "reward_extra_infos_to_dump[\"uid\"]" in text,
         "rollout_advantage": "reward_extra_infos_to_dump[\"advantage\"]" in text,
+        "training_selection": "reward_extra_infos_to_dump[\"selected_for_update\"]" in text,
     }
 
 
@@ -87,10 +88,31 @@ def apply_patch(verl_root: Path, backup_dir: Path) -> None:
         )
         replace_once(path, score_anchor, advantage_code)
 
+    if not checks["training_selection"]:
+        selection_anchor = (
+            "            advantages = (\n"
+            "                (batch.batch[\"advantages\"] * batch.batch[\"response_mask\"]).sum(-1)\n"
+            "                / batch.batch[\"response_mask\"].sum(-1).clamp_min(1)\n"
+            "            ).detach().cpu().tolist()\n"
+        )
+        selection_code = (
+            selection_anchor
+            + "            response_mask_tokens = batch.batch[\"response_mask\"].sum(-1).detach().cpu().tolist()\n"
+            + "            policy_signal_tokens = (\n"
+            + "                (batch.batch[\"advantages\"].abs() > 1e-8) & batch.batch[\"response_mask\"].bool()\n"
+            + "            ).sum(-1).detach().cpu().tolist()\n"
+            + "            actor_update_enabled = self.config.trainer.critic_warmup <= self.global_steps\n"
+            + "            selected_for_update = [bool(actor_update_enabled and tokens > 0) for tokens in response_mask_tokens]\n"
+        )
+        replace_once(path, selection_anchor, selection_code)
+
         text = path.read_text(encoding="utf-8")
         metadata_anchor = "            reward_extra_infos_to_dump[\"data_source\"] = data_source_list\n"
         evidence_fields = (
             "            reward_extra_infos_to_dump[\"advantage\"] = advantages\n"
+            "            reward_extra_infos_to_dump[\"selected_for_update\"] = selected_for_update\n"
+            "            reward_extra_infos_to_dump[\"response_mask_tokens\"] = response_mask_tokens\n"
+            "            reward_extra_infos_to_dump[\"policy_signal_tokens\"] = policy_signal_tokens\n"
             "            reward_extra_infos_to_dump[\"adv_estimator\"] = "
             "[str(self.config.algorithm.adv_estimator)] * len(inputs)\n"
         )
