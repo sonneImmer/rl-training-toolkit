@@ -198,3 +198,7 @@ def test_dashboard_summary_includes_evaluation_count(tmp_path):
     summary = _summary(item)
     assert summary["evaluation_count"] == 1
     assert summary["latest_evaluation"]["accuracy"] == 0.75
+
+    cached = _summary({"evaluation_count": 3, "latest_evaluation": {"accuracy": 0.8}, "labels": []})
+    assert cached["evaluation_count"] == 3
+    assert cached["latest_evaluation"]["accuracy"] == 0.8
