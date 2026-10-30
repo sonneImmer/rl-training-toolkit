@@ -188,3 +188,13 @@ def test_independent_evaluation_detects_overall_up_class_down(tmp_path):
     assert alert["class_name"] == "FAN_OUT"
     assert alert["overall_after"] == 0.96
     assert alert["class_after"] == 0.80
+
+
+def test_dashboard_summary_includes_evaluation_count(tmp_path):
+    from rl_diagnostics.dashboard import _summary
+
+    item = {"evaluations": [{"summary": {"accuracy": 0.75}}], "labels": []}
+
+    summary = _summary(item)
+    assert summary["evaluation_count"] == 1
+    assert summary["latest_evaluation"]["accuracy"] == 0.75

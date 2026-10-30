@@ -54,6 +54,8 @@ def _summary(item: dict) -> dict:
         "manifest_missing": item.get("manifest_missing", []),
         "progress": item.get("progress", {}),
         "labels": item.get("labels", []),
+        "evaluation_count": len(item.get("evaluations", [])),
+        "latest_evaluation": item.get("evaluations", [])[-1].get("summary", {}) if item.get("evaluations") else {},
         "latest_metrics": {
             key: latest.get(key) for key in (
                 "reward_mean", "reward_min", "reward_max", "reward_std", "valid_ratio", "positive_ratio", "clip_ratio",
