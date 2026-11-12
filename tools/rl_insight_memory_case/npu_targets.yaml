@@ -1,0 +1,6 @@
+jobs:
+  - job_name: npu-exporter
+    targets:
+      - target: "172.60.6.4:19101"
+        labels:
+          node: "rl-lab-8x910b3"

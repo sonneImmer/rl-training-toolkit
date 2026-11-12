@@ -1,0 +1,263 @@
+{
+  "archive_date": "2026-11-12",
+  "base_revision": "a904198973f15c1ed6f46d8b8aa8ecc932f0b79e",
+  "scope": "Current engineering assets, standardized experiment evidence, reports and known gaps. Full logs, rollouts, checkpoints and monitoring databases remain external.",
+  "manifest_excludes_itself": true,
+  "files": [
+    {
+      "path": "PPT_CASE_MATERIAL.md",
+      "bytes": 14232,
+      "sha256": "45918fe9758813d58a211b6daadfdcccac2b070df75eaeb81ab568f56cf32370"
+    },
+    {
+      "path": "README.md",
+      "bytes": 8486,
+      "sha256": "916e0451a5e73dc8135ea8d73bb25e045378df8f25f336371f76bac5346b7f49"
+    },
+    {
+      "path": "docs/ARCHIVE_INDEX.md",
+      "bytes": 1835,
+      "sha256": "1be525497ada15424b8aca67995534f3f774031fbc32befb838b227ad0a49b60"
+    },
+    {
+      "path": "docs/CURRENT_STATUS_20261112.md",
+      "bytes": 11079,
+      "sha256": "383b902c53eca62a4a0c4fa071ec6f140ecd2dd4111794d7e28e76a488719147"
+    },
+    {
+      "path": "docs/SYNC_VALIDATION_20261112.md",
+      "bytes": 1200,
+      "sha256": "b19243fc4e73aa0ef38d739058dcb72f902f86b264e39b6be2aeac960b3fbed6"
+    },
+    {
+      "path": "docs/amlsim/LONG_TRAINING_COMPARISON_20261031.md",
+      "bytes": 7023,
+      "sha256": "d5f79528efb37699b2225f1e22968a5564e759a75e9a09a1bb28629b060cb6af"
+    },
+    {
+      "path": "docs/amlsim/results/evaluations/grpo-long-step100/metrics.json",
+      "bytes": 1069,
+      "sha256": "4075eb1d53b7e57c4dde88b54b15d1488c07489026f25fd5bd44ebd920302238"
+    },
+    {
+      "path": "docs/amlsim/results/evaluations/grpo-long-step125/metrics.json",
+      "bytes": 1090,
+      "sha256": "6c4897f36b580d2c07175575bdccac64e4fb0736f8339602e03b2e84c7a1f91e"
+    },
+    {
+      "path": "docs/amlsim/results/evaluations/grpo-long-step150/metrics.json",
+      "bytes": 1090,
+      "sha256": "49960db41fb5908d78f7b84a2c745b5946570638a101457e4ff7c067d3523bca"
+    },
+    {
+      "path": "docs/amlsim/results/evaluations/grpo-long-step25/metrics.json",
+      "bytes": 1088,
+      "sha256": "dfdc907c7a765ba39f346de3b9df890740b9fda1a0a855a1f5049ccf8c3bf7cf"
+    },
+    {
+      "path": "docs/amlsim/results/evaluations/grpo-long-step50/metrics.json",
+      "bytes": 1075,
+      "sha256": "45ecd971ce36b92095aa8e3f751daf9b634f73a9f83007ac8138413a6da39f49"
+    },
+    {
+      "path": "docs/amlsim/results/evaluations/grpo-long-step75/metrics.json",
+      "bytes": 1069,
+      "sha256": "20a8a380d5cbf70fc653bcd04c2434f873f66b408676388f7773ad5d319c367b"
+    },
+    {
+      "path": "docs/amlsim/results/evaluations/ngrpo-long-step100/metrics.json",
+      "bytes": 1080,
+      "sha256": "b8d286f8435a0dff0c12c701717a18502979c8de47e5a9d878410bcabd3ad3cd"
+    },
+    {
+      "path": "docs/amlsim/results/evaluations/ngrpo-long-step125/metrics.json",
+      "bytes": 1098,
+      "sha256": "045e5d03006735fd7a8d68f1cc890917db0378211bc5bc36dd94b36662eae780"
+    },
+    {
+      "path": "docs/amlsim/results/evaluations/ngrpo-long-step150/metrics.json",
+      "bytes": 1029,
+      "sha256": "8e02d32a1a228cbff537a6319c44eb6b3a8e216df9c2d0df69832e46cb1ddffd"
+    },
+    {
+      "path": "docs/amlsim/results/evaluations/ngrpo-long-step25/metrics.json",
+      "bytes": 1120,
+      "sha256": "a764a32b2c8b04ce88513d21a62be38df607027e32051d4de09f7380fab5011b"
+    },
+    {
+      "path": "docs/amlsim/results/evaluations/ngrpo-long-step50/metrics.json",
+      "bytes": 1099,
+      "sha256": "fad4abdd867fbf5d21094ef5e49b4f05704900711e1ba02cbde4275edf680b3d"
+    },
+    {
+      "path": "docs/amlsim/results/evaluations/ngrpo-long-step75/metrics.json",
+      "bytes": 1081,
+      "sha256": "753b89b71a1866e73ee832860b75e3443a3279ce1c05282cf3fb910eb4bec814"
+    },
+    {
+      "path": "docs/amlsim/results/manifests/grpo_long.json",
+      "bytes": 920,
+      "sha256": "775815ffceb9db2f210cf90dfff9136d6e86cab66479433877230aad1b8019ae"
+    },
+    {
+      "path": "docs/amlsim/results/manifests/ngrpo_long.json",
+      "bytes": 921,
+      "sha256": "0940babb05072861a507955f06e4ad1bcc2bf18994a7c6da5385c360df57a6cd"
+    },
+    {
+      "path": "docs/finance_risk/README.md",
+      "bytes": 1590,
+      "sha256": "21b8e701aad1fef479e1fe2944d23ca6da299fe2547b7e2fee25edae389c5505"
+    },
+    {
+      "path": "docs/finance_risk/ROLLOUT_RULE_EXPLANATION.md",
+      "bytes": 5035,
+      "sha256": "50586fca38801dc181c905d848b0027d6fffe861ef0f1c9ca6134f2bf45cfacd"
+    },
+    {
+      "path": "docs/rl_insight/README.md",
+      "bytes": 3034,
+      "sha256": "1b65e794f35fc14acb6393322bd8d210f00b984e4765484a424af5931529b1cf"
+    },
+    {
+      "path": "docs/rl_insight/results/REPORT.md",
+      "bytes": 1646,
+      "sha256": "2740dcc8fa74a55352eb973de50580b08ac0a24fcb89e013a3aa5a87291f67b4"
+    },
+    {
+      "path": "docs/rl_insight/results/RL_INSIGHT_GRAD_SYNC_CASE_REPORT.md",
+      "bytes": 9538,
+      "sha256": "b50bbd5894e23c3b940083046f9b6886e3d80bdb34f6692420642008de945bdb"
+    },
+    {
+      "path": "docs/rl_insight/results/hbm_timeline.svg",
+      "bytes": 5087,
+      "sha256": "b5ba7eb35f088e2fbfc9809f515898e9dddb9f61fe09b00bfb760b8ce29eadb8"
+    },
+    {
+      "path": "docs/rl_insight/results/index.html",
+      "bytes": 2761,
+      "sha256": "a916c76ad2f306ce84db81befee67b87870387034484d9418d5e92a268e603f7"
+    },
+    {
+      "path": "docs/rl_insight/results/manifests/deferred.sSL1j9K6/case_timing.json",
+      "bytes": 148,
+      "sha256": "3019e735ba425d62635a425d975dc81bf4e94563a6943b648eac062fb736196c"
+    },
+    {
+      "path": "docs/rl_insight/results/manifests/deferred.sSL1j9K6/run_manifest.json",
+      "bytes": 634,
+      "sha256": "cd56c301fa5e2ac2251c6cbd4961469c2c2fdef69036fcb75133eaddb5d79b75"
+    },
+    {
+      "path": "docs/rl_insight/results/manifests/per_micro_batch.5qh7zggG/case_timing.json",
+      "bytes": 155,
+      "sha256": "da27914b795edc9bf1b4105b5defb3edef495aa23403f9f770a0ede0757c1897"
+    },
+    {
+      "path": "docs/rl_insight/results/manifests/per_micro_batch.5qh7zggG/run_manifest.json",
+      "bytes": 641,
+      "sha256": "5e30c2d52c01877d7b7de3a3d97fa706006f03f81a63470937d42e290f96d13b"
+    },
+    {
+      "path": "docs/rl_insight/results/peak_memory_comparison.svg",
+      "bytes": 2895,
+      "sha256": "88e4d803fb3a65282f3b395dfaad49735da1fb1f4282052bef0f0566b051d4b5"
+    },
+    {
+      "path": "docs/rl_insight/results/summary.csv",
+      "bytes": 485,
+      "sha256": "759543c45da162baf080270178c4576a114258d8fcd165af3d3d7f4fb9c54f00"
+    },
+    {
+      "path": "patch_tools/patch_verl_gradient_sync_case.py",
+      "bytes": 5663,
+      "sha256": "292e7d4c823d007812a78a00ca1edfa2965209c2f1033cdb2defec0d40b7aa8b"
+    },
+    {
+      "path": "ppt_like/ScreenShot_20261103112559.PNG",
+      "bytes": 972720,
+      "sha256": "e68f78f1e98ea5c499000cf65150bb936b9ab9aec9d9d5df2f07d04231562ae6"
+    },
+    {
+      "path": "ppt_like/finance_risk_case_presentation.md",
+      "bytes": 15392,
+      "sha256": "1f4e6d3453ecede36e0d644c36d484e5d9ebd46fe6cae7f6c2801750710c8814"
+    },
+    {
+      "path": "ppt_like/function_map.html",
+      "bytes": 7398,
+      "sha256": "012a09aaaa81fff7ebe432441e87af1f5eaf83ae22ecdeef81d4b52992a421e7"
+    },
+    {
+      "path": "ppt_like/index.html",
+      "bytes": 9743,
+      "sha256": "49c9b297205be1a20ed63e58772917eb43103bf06a3fbcbaafcc1415e9270053"
+    },
+    {
+      "path": "ppt_like/skill/algorithm_selection_guide.md",
+      "bytes": 5914,
+      "sha256": "2daa108bfecac42ad22a70cc25807ae79f2eee14f22da7d73074ed5da19f0a0e"
+    },
+    {
+      "path": "ppt_like/skill/rl_training_diagnostics.md",
+      "bytes": 4709,
+      "sha256": "0dd78e535909105defb3ca905657d9ce3821dabeb0d26e1bdb099a3c707b345e"
+    },
+    {
+      "path": "ppt_like/skill_closed_loop.html",
+      "bytes": 5122,
+      "sha256": "a24a2a40c02ae97c2d4c8ebd3176fe9fa06780daa546fd1089259dde5f0f10dd"
+    },
+    {
+      "path": "ppt_like/training_direction_table.html",
+      "bytes": 8653,
+      "sha256": "c407d795655f60a5fc96cdd1a6df1cac32ebf025dd5c977a1355b894539a72c2"
+    },
+    {
+      "path": "src/rl_diagnostics/web/app.js",
+      "bytes": 37090,
+      "sha256": "497af4e563c27da79ffc806097b43ca99d6941839192960791ad63047c025ebf"
+    },
+    {
+      "path": "src/rl_diagnostics/web/finance-risk-sft-baseline.html",
+      "bytes": 6915,
+      "sha256": "771d997fe98a191605eaba695efaf1fcb267299f6f1093b072b0660af9a8a0bc"
+    },
+    {
+      "path": "src/rl_diagnostics/web/styles.css",
+      "bytes": 16388,
+      "sha256": "22aa06b53bc6396c0a1689dd778624ec418811960851f902321e8ff28ea7de55"
+    },
+    {
+      "path": "tools/rl_insight_memory_case/build_memory_case_report.py",
+      "bytes": 15696,
+      "sha256": "a623510448a80c6fe979f86f811b5521af0e5e515d56756e5dc3825d5852303c"
+    },
+    {
+      "path": "tools/rl_insight_memory_case/launch_memory_case.sh",
+      "bytes": 3546,
+      "sha256": "a50f5fe18d571b31c7e000183067c0beed8a60fc0cc595260149bc15545ca87a"
+    },
+    {
+      "path": "tools/rl_insight_memory_case/npu_targets.yaml",
+      "bytes": 130,
+      "sha256": "c679aea2481afc5ce7aa08af77b100eb297d7dc82ac3889ecbb711c20254066b"
+    },
+    {
+      "path": "tools/rl_insight_memory_case/run_memory_case.sh",
+      "bytes": 5365,
+      "sha256": "fd457fd3044b70abce6a97698ebd921582d5fbcf401fd4107e55fd21d634526e"
+    }
+  ],
+  "verification": {
+    "pytest_passed": 335,
+    "pytest_failed": 1,
+    "failure_reason": "AMLSim generator subprocess requires pandas; pandas is not installed on host.",
+    "python_syntax_files": 43,
+    "shell_syntax_files": 2,
+    "web_javascript_syntax": "passed with Node v24.21.0",
+    "browser_interactions": "not tested",
+    "new_training": "not run"
+  }
+}

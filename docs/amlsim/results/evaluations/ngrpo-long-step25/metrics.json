@@ -1,0 +1,59 @@
+{
+  "samples": 800,
+  "risk": {
+    "true_positive": 550,
+    "false_positive": 0,
+    "true_negative": 200,
+    "false_negative": 50,
+    "invalid_output": 0,
+    "accuracy": 0.9375,
+    "precision": 1.0,
+    "recall": 0.9166666666666666,
+    "f1": 0.9565217391304348,
+    "f2": 0.9322033898305083
+  },
+  "typology_accuracy": 0.9375,
+  "format_valid_rate": 1.0,
+  "evidence_precision": 0.9375,
+  "evidence_recall": 0.9347708333333332,
+  "evidence_f1": 0.9359794372294372,
+  "typology_confusion": {
+    "CYCLE": {
+      "CYCLE": 189,
+      "NORMAL": 11
+    },
+    "NORMAL": {
+      "NORMAL": 200
+    },
+    "FAN_IN": {
+      "FAN_IN": 167,
+      "NORMAL": 33
+    },
+    "FAN_OUT": {
+      "FAN_OUT": 194,
+      "NORMAL": 6
+    }
+  },
+  "per_typology": {
+    "CYCLE": {
+      "samples": 200,
+      "correct": 189,
+      "accuracy": 0.945
+    },
+    "NORMAL": {
+      "samples": 200,
+      "correct": 200,
+      "accuracy": 1.0
+    },
+    "FAN_IN": {
+      "samples": 200,
+      "correct": 167,
+      "accuracy": 0.835
+    },
+    "FAN_OUT": {
+      "samples": 200,
+      "correct": 194,
+      "accuracy": 0.97
+    }
+  }
+}

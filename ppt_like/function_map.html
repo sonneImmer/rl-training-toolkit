@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RL Training Toolkit - Function Map</title>
+<style>
+:root{--ink:#18242d;--muted:#62727d;--line:#d5e0e5;--paper:#f4f7f8;--white:#fff;--teal:#087f73;--teal-soft:#e7f4f1;--blue:#286da8;--blue-soft:#e8f1f8;--orange:#b56b1c;--orange-soft:#fff1df;--red:#a44144;--red-soft:#fbe9e9}
+*{box-sizing:border-box}body{margin:0;min-width:1180px;background:#dfe7ea;color:var(--ink);font-family:Inter,"Noto Sans SC","Microsoft YaHei",system-ui,sans-serif}.slide{width:min(100vw,1680px);min-height:min(100vh,945px);aspect-ratio:16/9;margin:auto;padding:35px 52px 30px;background:var(--paper);overflow:hidden}.topline{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding-bottom:11px;margin-bottom:17px}.eyebrow{color:var(--teal);font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}.tag{color:var(--muted);font-size:11px}.title-row{display:flex;justify-content:space-between;align-items:end;gap:35px;margin-bottom:19px}h1{margin:0;font-size:38px;line-height:1.1;letter-spacing:0}.title-row p{max-width:550px;margin:0;color:var(--muted);font-size:13px;line-height:1.55}.title-row strong{color:var(--ink)}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.block{border:1px solid var(--line);background:var(--white);padding:15px 16px 14px;min-height:310px;box-shadow:0 5px 16px rgba(35,60,70,.04)}.block.data{border-top:4px solid var(--teal)}.block.monitor{border-top:4px solid var(--blue)}.block.diagnose{border-top:4px solid var(--orange)}.block.support{border-top:4px solid var(--red)}.block-head{display:flex;justify-content:space-between;align-items:start;margin-bottom:12px}.block-title{display:flex;align-items:baseline;gap:9px}.block-title h2{margin:0;font-size:20px}.block-title span{color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.block-no{color:var(--muted);font-size:11px;font-weight:800}.items{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.item{padding:11px 12px;border:1px solid var(--line);background:#fbfcfc;min-height:105px}.item h3{margin:0 0 7px;font-size:13px;line-height:1.25}.item p{margin:0;color:var(--muted);font-size:11px;line-height:1.55}.item p strong{color:var(--ink);font-weight:700}.block-note{margin:12px 0 0;padding-top:10px;border-top:1px solid var(--line);color:var(--muted);font-size:11px;line-height:1.45}.block-note b{color:var(--ink)}.footer{display:flex;align-items:center;justify-content:space-between;margin-top:16px;color:var(--muted);font-size:11px}.footer strong{color:var(--ink);font-size:12px}.legend{display:flex;gap:15px}.legend span:before{content:"";display:inline-block;width:7px;height:7px;margin-right:5px;background:var(--teal);border-radius:50%}.legend span:nth-child(2):before{background:var(--blue)}.legend span:nth-child(3):before{background:var(--orange)}.legend span:nth-child(4):before{background:var(--red)}@media(max-width:1250px){.slide{padding:27px 36px 23px}.block{min-height:295px;padding:12px}.item{min-height:98px;padding:9px}.item p{font-size:10px}}
+</style>
+</head>
+<body>
+<main class="slide" aria-label="RL Training Toolkit 十二项功能分类">
+  <div class="topline"><div class="eyebrow">RL TRAINING TOOLKIT / FUNCTION MAP</div><div class="tag">十二项功能 · 四类能力</div></div>
+  <div class="title-row"><h1>RL Training Toolkit 的功能组成</h1><p>工具不是单一看板，而是围绕 RL 实验建立四类能力：<strong>接入事实、观察过程、解释问题、支持训练决策</strong>。</p></div>
+  <section class="grid">
+    <article class="block data">
+      <div class="block-head"><div class="block-title"><h2>数据接入</h2><span>Data Ingestion</span></div><span class="block-no">01 / 03</span></div>
+      <div class="items">
+        <div class="item"><h3>1. 训练日志解析</h3><p>解析训练进度、Reward、KL、Entropy、梯度、截断率和错误信息。</p></div>
+        <div class="item"><h3>2. Rollout 数据解析</h3><p>读取 Prompt、Output、Reward、Advantage、预测结果和格式状态。</p></div>
+        <div class="item"><h3>3. 实验管理与归档</h3><p>记录实验配置、版本、环境和结果，并支持实验对比、导出和导入。</p></div>
+      </div>
+      <p class="block-note"><b>作用：</b>把分散在训练目录、日志文件和 Rollout 文件中的实验事实统一纳入工具。</p>
+    </article>
+
+    <article class="block monitor">
+      <div class="block-head"><div class="block-title"><h2>过程监控</h2><span>Process Monitoring</span></div><span class="block-no">02 / 03</span></div>
+      <div class="items">
+        <div class="item"><h3>4. 浏览器前端看板</h3><p>展示实验列表、训练指标、告警、Group 信号和 Rollout 证据。</p></div>
+        <div class="item"><h3>5. Jupyter 实时监控</h3><p>在 Notebook 中查看训练趋势、Rollout、实验对比和稳定性规则。</p></div>
+        <div class="item"><h3>6. Rollout 质量诊断</h3><p>检查空输出、无效 JSON、Schema 错误、格式错误和输出截断。</p></div>
+        <div class="item"><h3>7. 训练稳定性监控</h3><p>检测 Reward 退化、KL 漂移、梯度异常、Clip 饱和和策略退化。</p></div>
+      </div>
+      <p class="block-note"><b>作用：</b>让研发人员在训练过程中及时看到状态变化，而不是训练结束后才读取结果。</p>
+    </article>
+
+    <article class="block diagnose">
+      <div class="block-head"><div class="block-title"><h2>问题诊断</h2><span>Behavior Diagnosis</span></div><span class="block-no">03 / 03</span></div>
+      <div class="items">
+        <div class="item"><h3>8. Prompt Group 分析</h3><p>恢复同一 Prompt 的多条回答，分析全对、全错、混合和有效 Group。</p></div>
+        <div class="item"><h3>9. 领域任务评测</h3><p>支持数学、代码、金融风控、FinQA、AMLSim 等任务评估。</p></div>
+        <div class="item"><h3>10. 离线诊断与报告生成</h3><p>输出 CSV、JSON、HTML 报告、SVG 图表和异常样本。</p></div>
+      </div>
+      <p class="block-note"><b>作用：</b>从“指标发生变化”进一步定位到“模型行为发生了什么、可能为什么发生”。</p>
+    </article>
+
+    <article class="block support">
+      <div class="block-head"><div class="block-title"><h2>训练支撑</h2><span>Training Support</span></div><span class="block-no">04 / 03</span></div>
+      <div class="items">
+        <div class="item"><h3>11. VERL Rollout 证据补丁</h3><p>为 Rollout 补充 <strong>uid、算法信息、Advantage</strong> 等训练证据。</p></div>
+        <div class="item"><h3>12. NGRPO 运行时补丁</h3><p>为 VERL 增加 NGRPO 支持，并提供应用、检查和恢复能力。</p></div>
+      </div>
+      <p class="block-note"><b>说明：</b>这里将实验管理与归档作为数据接入的一部分；训练支撑强调对 VERL 训练运行时的直接支持。</p>
+    </article>
+  </section>
+  <div class="footer"><strong>从原始训练数据到可执行实验结论：接入 → 监控 → 诊断 → 训练支撑</strong><div class="legend"><span>数据</span><span>过程</span><span>诊断</span><span>支撑</span></div></div>
+</main>
+</body>
+</html>

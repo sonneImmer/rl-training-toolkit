@@ -20,3 +20,12 @@
 - “原型完成”：链路已跑通并有结果，但不代表业务指标达标。
 - “工具验收”：代码和固定样例通过测试。
 - “业务验收”：需要固定测试集、业务门槛和多 seed 复现；当前金融风控案例尚未达到该状态。
+
+## 2026-11-12同步补充
+
+- `CURRENT_STATUS_20261112.md`：功能清单、实验台账、七类规则缺陷与优先级。
+- `SYNC_VALIDATION_20261112.md`：本轮验证结果与限制。
+- `amlsim/results/evaluations/*-long-step*/metrics.json`：GRPO/NGRPO各6个长训练checkpoint评测快照。
+- `rl_insight/`：受控显存案例的脚本说明、最终对照数据、运行清单与标注图表。
+- `PPT_CASE_MATERIAL.md`及`ppt_like/`：历史汇报草稿，引用时以本轮总览和原始指标为准。
+- `ARCHIVE_MANIFEST_20261112.json`：本轮归档文件清单、大小和SHA256。

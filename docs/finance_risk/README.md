@@ -13,6 +13,7 @@
 ## 导航
 
 - `CASE_REPORT.md`：统一实验说明、指标解释和结论边界。
+- `ROLLOUT_RULE_EXPLANATION.md`：Constant Group 与正类无 Advantage 规则的触发条件、计算示例和结论边界。
 - `PPT_MATERIAL.md`：汇报页素材。
 - `REPRODUCTION.md`：数据、SFT、RL、诊断和评测命令。
 - `results/`：数据清单、独立指标、运行清单、Rollout 汇总与稳定性 CSV。

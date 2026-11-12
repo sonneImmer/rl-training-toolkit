@@ -11,6 +11,13 @@
 
 AMLSim 反洗钱案例入口：`docs/amlsim/README.md`。
 
+## 当前状态与功能分析
+
+- [2026-11-12开发进展、功能、实验与缺陷总览](docs/CURRENT_STATUS_20261112.md)
+- [本轮验证记录](docs/SYNC_VALIDATION_20261112.md)
+- [RL-Insight集成与性能案例](docs/rl_insight/README.md)
+- [AMLSim短训练与150步长训练对比](docs/amlsim/LONG_TRAINING_COMPARISON_20261031.md)
+
 ## 安装
 
 ```bash

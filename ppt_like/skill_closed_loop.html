@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skill 训练优化闭环</title>
+<style>
+:root {
+  --red: #c9242f;
+  --red-dark: #9f1720;
+  --ink: #111111;
+  --paper: #ffffff;
+  --line-soft: #f1d8da;
+}
+
+* { box-sizing: border-box; }
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Noto Sans SC", "Microsoft YaHei", Arial, sans-serif;
+}
+
+body {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+}
+
+.canvas {
+  width: min(100vw, 1440px);
+  min-height: min(100vh, 810px);
+  aspect-ratio: 16 / 9;
+  padding: 42px 54px;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 32px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid var(--red);
+}
+
+h1 {
+  margin: 0;
+  font-size: 34px;
+  line-height: 1.2;
+  letter-spacing: 0;
+  font-weight: 800;
+}
+
+.header-note {
+  margin: 0 0 3px;
+  font-size: 14px;
+  color: #4b4b4b;
+  white-space: nowrap;
+}
+
+.diagram {
+  position: relative;
+  flex: 1;
+  width: min(100%, 1180px);
+  margin: 20px auto 0;
+  min-height: 610px;
+}
+
+.arrows {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.arrow-path {
+  fill: none;
+  stroke: var(--red);
+  stroke-width: 4;
+  stroke-linecap: round;
+  marker-end: url(#arrowhead);
+}
+
+.node {
+  position: absolute;
+  width: 310px;
+  min-height: 112px;
+  padding: 21px 24px 20px 76px;
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border: 3px solid var(--red);
+  color: var(--ink);
+}
+
+.node-number {
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  width: 38px;
+  height: 38px;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--red);
+  border-radius: 50%;
+  color: var(--red-dark);
+  background: #ffffff;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.node p {
+  margin: 0;
+  font-size: 19px;
+  line-height: 1.55;
+  font-weight: 700;
+}
+
+.node-1 { left: 50%; top: 3%; transform: translateX(-50%); }
+.node-2 { right: 2%; top: 50%; transform: translateY(-50%); }
+.node-3 { left: 50%; bottom: 3%; transform: translateX(-50%); }
+.node-4 { left: 2%; top: 50%; transform: translateY(-50%); }
+
+.center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 210px;
+  height: 210px;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  text-align: center;
+  border: 2px solid var(--line-soft);
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.center strong {
+  display: block;
+  font-size: 25px;
+  line-height: 1.35;
+}
+
+.center span {
+  display: block;
+  margin-top: 8px;
+  color: var(--red-dark);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .canvas {
+    width: 100%;
+    min-height: 100vh;
+    aspect-ratio: auto;
+    padding: 28px 20px;
+  }
+
+  .header { align-items: flex-start; }
+  h1 { font-size: 27px; }
+  .header-note { display: none; }
+
+  .diagram {
+    min-height: 720px;
+    margin-top: 18px;
+  }
+
+  .node {
+    width: 250px;
+    min-height: 102px;
+    padding: 16px 18px 16px 64px;
+  }
+
+  .node p { font-size: 16px; }
+  .node-number { left: 15px; }
+  .center { width: 150px; height: 150px; }
+  .center strong { font-size: 20px; }
+}
+</style>
+</head>
+<body>
+<main class="canvas" aria-labelledby="page-title">
+  <header class="header">
+    <h1 id="page-title">Skill 训练优化闭环</h1>
+    <p class="header-note">决策参与 · 实时监控 · 数据筛选 · 经验沉淀</p>
+  </header>
+
+  <section class="diagram" aria-label="由四个节点构成的 Skill 训练优化闭环">
+    <svg class="arrows" viewBox="0 0 1180 610" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <marker id="arrowhead" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+          <path d="M 0 0 L 12 6 L 0 12 Z" fill="#c9242f"></path>
+        </marker>
+      </defs>
+      <path class="arrow-path" d="M 750 75 C 905 78, 1015 155, 1025 248"></path>
+      <path class="arrow-path" d="M 1025 362 C 1010 470, 905 533, 750 535"></path>
+      <path class="arrow-path" d="M 430 535 C 275 532, 170 465, 155 362"></path>
+      <path class="arrow-path" d="M 155 248 C 170 145, 275 78, 430 75"></path>
+    </svg>
+
+    <article class="node node-1">
+      <span class="node-number">01</span>
+      <p>调优 Skill<br>参与训练决策</p>
+    </article>
+
+    <article class="node node-2">
+      <span class="node-number">02</span>
+      <p>实时监控<br>介入训练过程</p>
+    </article>
+
+    <article class="node node-3">
+      <span class="node-number">03</span>
+      <p>筛选有效<br>训练数据</p>
+    </article>
+
+    <article class="node node-4">
+      <span class="node-number">04</span>
+      <p>优化迭代 Skill<br>沉淀经验</p>
+    </article>
+
+    <div class="center" aria-hidden="true">
+      <div>
+        <strong>持续优化<br>形成闭环</strong>
+        <span>SKILL LOOP</span>
+      </div>
+    </div>
+  </section>
+</main>
+</body>
+</html>

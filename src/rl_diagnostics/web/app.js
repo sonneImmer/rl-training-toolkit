@@ -4,6 +4,10 @@ const state = {
   selectedId: null,
   detail: null,
   rolloutEvidence: null,
+  chartView: {
+    experimentId: null,
+    endStep: null,
+  },
   timer: null,
 };
 
@@ -228,6 +232,7 @@ async function selectExperiment(experimentId, scroll = true, detailState = null)
   if (changed) {
     state.rolloutEvidence = null;
     state.rolloutReading = false;
+    state.chartView = { experimentId, endStep: null };
   }
   renderList();
   try {
@@ -316,6 +321,9 @@ function renderDetail() {
   const progress = item.progress || {};
   const labels = item.labels || [];
   const rows = item.steps || [];
+  const firstStep = rows[0]?.step ?? 1;
+  const lastStep = rows.at(-1)?.step ?? firstStep;
+  const selectedEndStep = chartEndStep(rows);
   const diagnostics = item.diagnostics || {};
   const latestSignal = rows.at(-1) || {};
   const quality = latestSignal.rollout_quality_counts || {};
@@ -352,14 +360,22 @@ function renderDetail() {
     </section>
 
     <section class="section-band">
-      <div class="section-heading"><h3>训练指标</h3><span>按 step 更新</span></div>
+      <div class="section-heading chart-section-heading">
+        <div><h3>训练指标</h3><span id="chartRangeSummary">显示 Step ${firstStep}–${selectedEndStep}，共 ${rows.filter((row) => row.step <= selectedEndStep).length} 个数据点</span></div>
+        <div class="chart-range-controls">
+          <label for="chartEndStep">显示至 Step</label>
+          <input id="chartEndStepRange" type="range" min="${firstStep}" max="${lastStep}" value="${selectedEndStep}" ${rows.length < 2 ? "disabled" : ""}>
+          <input id="chartEndStep" type="number" min="${firstStep}" max="${lastStep}" value="${selectedEndStep}" aria-label="显示至 Step">
+          <button id="resetChartRange" class="icon-button" type="button" title="显示全部 Step" aria-label="显示全部 Step">↺</button>
+        </div>
+      </div>
       <div class="section-content chart-grid">
-        <div class="chart-block"><h4>每 Step 平均奖励 / 有效回答</h4><canvas id="rewardChart"></canvas></div>
-        <div class="chart-block" title="KL loss 衡量当前策略偏离参考模型所产生的惩罚项；Entropy 衡量输出随机性。"><h4>KL Loss / Entropy</h4><canvas id="policyChart"></canvas></div>
-        <div class="chart-block" title="本步参数更新前的整体梯度大小。应结合组内学习信号判断，单个尖峰不能直接判定训练崩溃。"><h4>梯度范数</h4><canvas id="gradientChart"></canvas></div>
-        <div class="chart-block" title="每个 prompt 的多次 rollout 组成一组；全对或全错表示组内没有正确性差异。"><h4>正确性分组（每个 Prompt）</h4><canvas id="groupChart"></canvas></div>
-        <div class="chart-block"><h4>组内学习信号</h4><canvas id="signalChart"></canvas></div>
-        <div class="chart-block"><h4>Rollout 质量</h4><canvas id="qualityChart"></canvas></div>
+        <div class="chart-block"><h4>每 Step 平均奖励 / 有效回答</h4><div class="chart-surface"><canvas id="rewardChart"></canvas><div class="chart-tooltip"></div></div></div>
+        <div class="chart-block" title="KL loss 衡量当前策略偏离参考模型所产生的惩罚项；Entropy 衡量输出随机性。"><h4>KL Loss / Entropy</h4><div class="chart-surface"><canvas id="policyChart"></canvas><div class="chart-tooltip"></div></div></div>
+        <div class="chart-block" title="本步参数更新前的整体梯度大小。应结合组内学习信号判断，单个尖峰不能直接判定训练崩溃。"><h4>梯度范数</h4><div class="chart-surface"><canvas id="gradientChart"></canvas><div class="chart-tooltip"></div></div></div>
+        <div class="chart-block" title="每个 prompt 的多次 rollout 组成一组；全对或全错表示组内没有正确性差异。"><h4>正确性分组（每个 Prompt）</h4><div class="chart-surface"><canvas id="groupChart"></canvas><div class="chart-tooltip"></div></div></div>
+        <div class="chart-block"><h4>组内学习信号</h4><div class="chart-surface"><canvas id="signalChart"></canvas><div class="chart-tooltip"></div></div></div>
+        <div class="chart-block"><h4>Rollout 质量</h4><div class="chart-surface"><canvas id="qualityChart"></canvas><div class="chart-tooltip"></div></div></div>
       </div>
     </section>
 
@@ -427,7 +443,46 @@ function renderDetail() {
     await loadRollouts();
   }));
   el("compareButton").addEventListener("click", loadComparison);
-  drawCharts(rows);
+  bindChartRangeControls(rows);
+  drawCharts(filteredChartRows(rows));
+}
+
+function chartEndStep(rows) {
+  const lastStep = rows.at(-1)?.step ?? 1;
+  const firstStep = rows[0]?.step ?? lastStep;
+  const requested = state.chartView.experimentId === state.selectedId ? state.chartView.endStep : null;
+  if (requested === null || requested === undefined) return lastStep;
+  return Math.min(lastStep, Math.max(firstStep, Number(requested)));
+}
+
+function filteredChartRows(rows) {
+  const endStep = chartEndStep(rows);
+  return rows.filter((row) => Number(row.step) <= endStep);
+}
+
+function updateChartRange(rows, value) {
+  const firstStep = rows[0]?.step ?? 1;
+  const lastStep = rows.at(-1)?.step ?? firstStep;
+  const endStep = Math.min(lastStep, Math.max(firstStep, Number(value) || lastStep));
+  state.chartView = { experimentId: state.selectedId, endStep };
+  el("chartEndStepRange").value = endStep;
+  el("chartEndStep").value = endStep;
+  const visibleRows = filteredChartRows(rows);
+  el("chartRangeSummary").textContent = `显示 Step ${firstStep}–${endStep}，共 ${visibleRows.length} 个数据点`;
+  drawCharts(visibleRows);
+}
+
+function bindChartRangeControls(rows) {
+  const range = el("chartEndStepRange");
+  const input = el("chartEndStep");
+  const reset = el("resetChartRange");
+  if (!range || !input || !reset) return;
+  range.addEventListener("input", () => updateChartRange(rows, range.value));
+  input.addEventListener("change", () => updateChartRange(rows, input.value));
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") updateChartRange(rows, input.value);
+  });
+  reset.addEventListener("click", () => updateChartRange(rows, rows.at(-1)?.step ?? 1));
 }
 
 async function loadComparison() {
@@ -476,6 +531,8 @@ function setupCanvas(id) {
 }
 
 function drawLineChart(id, rows, series) {
+  const canvas = el(id);
+  if (!canvas) return;
   const { ctx, width, height } = setupCanvas(id);
   const padding = { left: 38, right: 14, top: 16, bottom: 26 };
   const values = series.flatMap((item) => rows.map((row) => row[item.key]).filter((value) => value !== null && value !== undefined).map(Number));
@@ -499,10 +556,38 @@ function drawLineChart(id, rows, series) {
       if (!started) { ctx.moveTo(x(index), y(Number(value))); started = true; } else { ctx.lineTo(x(index), y(Number(value))); }
     });
     ctx.stroke();
+    rows.forEach((row, index) => {
+      const value = row[item.key]; if (value === null || value === undefined) return;
+      ctx.beginPath(); ctx.fillStyle = item.color; ctx.arc(x(index), y(Number(value)), 2.5, 0, Math.PI * 2); ctx.fill();
+    });
     ctx.fillStyle = item.color; ctx.fillRect(padding.left + seriesIndex * 110, 2, 10, 3);
     ctx.fillStyle = "#657180"; ctx.fillText(item.label, padding.left + 15 + seriesIndex * 110, 7);
   });
   ctx.fillStyle = "#657180"; ctx.fillText(`step ${rows[0].step}`, padding.left, height - 7); ctx.fillText(`step ${rows.at(-1).step}`, width - 62, height - 7);
+  canvas._chartView = { rows, series, padding, width };
+  bindChartTooltip(canvas);
+}
+
+function bindChartTooltip(canvas) {
+  if (canvas._tooltipBound) return;
+  canvas._tooltipBound = true;
+  const tooltip = canvas.parentElement.querySelector(".chart-tooltip");
+  canvas.addEventListener("mousemove", (event) => {
+    const view = canvas._chartView;
+    if (!view?.rows?.length || !tooltip) return;
+    const rect = canvas.getBoundingClientRect();
+    const plotWidth = view.width - view.padding.left - view.padding.right;
+    const relativeX = Math.min(plotWidth, Math.max(0, event.clientX - rect.left - view.padding.left));
+    const index = Math.round(relativeX / Math.max(plotWidth, 1) * Math.max(view.rows.length - 1, 0));
+    const row = view.rows[index];
+    const values = view.series.map((item) => `<span><i style="background:${item.color}"></i>${escapeHtml(item.label)} <strong>${number(row[item.key], 4)}</strong></span>`).join("");
+    tooltip.innerHTML = `<b>Step ${escapeHtml(row.step)}</b>${values}`;
+    tooltip.classList.add("visible");
+    const tooltipLeft = Math.min(rect.width - 190, Math.max(8, event.clientX - rect.left + 12));
+    tooltip.style.left = `${tooltipLeft}px`;
+    tooltip.style.top = `${Math.max(8, event.clientY - rect.top - 18)}px`;
+  });
+  canvas.addEventListener("mouseleave", () => tooltip?.classList.remove("visible"));
 }
 
 function drawCharts(rows) {
@@ -571,7 +656,7 @@ async function loadRollouts() {
 el("refreshButton").addEventListener("click", () => loadExperiments(true));
 el("searchInput").addEventListener("input", renderList);
 el("statusFilter").addEventListener("change", renderList);
-window.addEventListener("resize", () => { if (state.detail) drawCharts(state.detail.steps || []); });
+window.addEventListener("resize", () => { if (state.detail) drawCharts(filteredChartRows(state.detail.steps || [])); });
 
 loadExperiments();
 state.timer = setInterval(() => loadExperiments(false), 10000);

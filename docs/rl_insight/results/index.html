@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RL-Insight Actor Update 显存案例</title>
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; color: #17212b; background: #f4f6f8; }
+    main { width: min(1180px, calc(100% - 40px)); margin: 32px auto 56px; }
+    h1 { font-size: 30px; margin: 0 0 8px; }
+    .note { color: #53606d; margin-bottom: 24px; }
+    .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+    .metric { background: #fff; border: 1px solid #dce2e8; border-radius: 6px; padding: 18px; }
+    .metric strong { display: block; font-size: 26px; margin-top: 8px; }
+    section { background: #fff; border: 1px solid #dce2e8; border-radius: 6px; padding: 20px; margin-top: 16px; }
+    img { display: block; width: 100%; height: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 10px; border-bottom: 1px solid #e4e8ec; text-align: right; }
+    th:first-child, td:first-child { text-align: left; }
+    @media (max-width: 760px) { .summary { grid-template-columns: 1fr; } main { width: min(100% - 20px, 1180px); } }
+  </style>
+</head>
+<body>
+<p><strong>诊断说明：</strong> <a href="RL_INSIGHT_GRAD_SYNC_CASE_REPORT.md">查看完整实验边界与必看图表清单</a></p><main>
+  <h1>RL-Insight Actor Update 显存案例</h1>
+  <p class="note">8 × Ascend 910B3 · Qwen3 8.19B · GRPO · 同参数仅切换梯度同步方式</p>
+  <div class="summary">
+    <div class="metric">Actor 峰值下降<strong>10.93 GiB</strong></div>
+    <div class="metric">相对降幅<strong>17.7%</strong></div>
+    <div class="metric">RL-Insight 采样峰值差<strong>2.70 GiB</strong></div>
+  </div>
+  <section><table>
+    <thead><tr><th>模式</th><th>RL-Insight HBM</th><th>Actor 分配峰值</th><th>Actor Update</th><th>Step</th><th>吞吐</th></tr></thead>
+    <tbody>
+      <tr><td>deferred（故障注入）</td><td>52.65 GiB</td><td>61.90 GiB</td><td>54.09 s</td><td>122.13 s</td><td>225.78</td></tr>
+      <tr><td>per_micro_batch（原生优化）</td><td>49.95 GiB</td><td>50.97 GiB</td><td>57.84 s</td><td>126.64 s</td><td>218.19</td></tr>
+    </tbody>
+  </table></section>
+  <section><img src="peak_memory_comparison.svg" alt="Peak memory comparison"></section>
+  <section><img src="hbm_timeline.svg" alt="HBM timeline"></section>
+  <section><strong>解释边界</strong><p>deferred 是为复现问题而注入的延迟同步故障；当前固定镜像默认采用 per_micro_batch。NPU Exporter 每 10 秒采样，整机曲线可能错过短时 backward 尖峰，因此以 VERL Actor 分配峰值确认瞬时差异。</p></section>
+</main></body></html>

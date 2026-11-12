@@ -1,0 +1,3 @@
+mode,exit_code,peak_hbm_gib,peak_actor_allocated_gib,mean_actor_update_s,mean_step_s,mean_throughput,run_dir
+deferred,0,52.650390625,61.90386772155762,54.08709788019769,122.13323059002869,225.77672908998343,/mnt/local/transformer_files/zkx/runs/rl-insight-memory-20261103/deferred.sSL1j9K6
+per_micro_batch,0,49.947265625,50.97451210021973,57.84475381486118,126.64113491983153,218.18762480826436,/mnt/local/transformer_files/zkx/runs/rl-insight-memory-20261103/per_micro_batch.5qh7zggG

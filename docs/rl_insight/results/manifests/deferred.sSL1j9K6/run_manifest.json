@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0.0",
+  "task": {
+    "domain": "rl_insight_memory_case",
+    "type": "fsdp_gradient_sync_memory"
+  },
+  "training": {
+    "algorithm": "grpo",
+    "seed": 42,
+    "total_steps": 2,
+    "train_batch_size": 64,
+    "gradient_sync_mode": "deferred",
+    "ppo_mini_batch_size": 64,
+    "ppo_micro_batch_size_per_gpu": 1
+  },
+  "monitoring": {
+    "stack": "rl-insight-0.3.0",
+    "npu_exporter": "172.60.6.4:19101",
+    "prometheus": "172.60.6.4:19090",
+    "rl_insight_server": "172.60.6.4:18080"
+  },
+  "experiment_note": "deferred mode is an intentionally injected regression for the controlled case study"
+}
