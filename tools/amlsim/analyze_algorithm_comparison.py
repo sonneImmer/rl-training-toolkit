@@ -48,7 +48,8 @@ def summarize(run_dir: Path, state_dir: Path) -> dict:
     steps = snapshot.get("steps", [])
     mechanism = snapshot.get("diagnostics", {}).get("mechanism", {})
     stability = snapshot.get("diagnostics", {}).get("stability", {})
-    evaluation = snapshot.get("latest_evaluation", {})
+    evaluations = snapshot.get("evaluations", [])
+    evaluation = evaluations[-1] if evaluations else {}
     return {
         "run_dir": str(run_dir.resolve()),
         "experiment_id": snapshot.get("experiment_id"),
