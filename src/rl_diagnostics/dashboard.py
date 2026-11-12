@@ -141,14 +141,16 @@ def make_handler(state: DashboardState):
             if len(parts) == 2 and parts[1] == "rollouts":
                 step = query.get("step", [None])[0]
                 limit = query.get("limit", ["12"])[0]
+                offset = query.get("offset", ["0"])[0]
                 try:
                     step_value = int(step) if step is not None else None
                     limit_value = min(max(int(limit), 1), 100)
+                    offset_value = max(int(offset), 0)
                 except ValueError:
-                    self._json({"error": "invalid step or limit"}, HTTPStatus.BAD_REQUEST)
+                    self._json({"error": "invalid step, offset, or limit"}, HTTPStatus.BAD_REQUEST)
                     return
-                records = state.store.get_rollouts(experiment_id, step_value, limit_value)
-                self._json(records)
+                page = state.store.get_rollout_page(experiment_id, step_value, offset_value, limit_value)
+                self._json(page)
                 return
             self._json({"error": "not found"}, HTTPStatus.NOT_FOUND)
 

@@ -8,7 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-STABILITY_CONFIG_VERSION = "0.1.0-exp"
+STABILITY_CONFIG_VERSION = "0.2.0-exp"
 
 
 @dataclass
@@ -36,7 +36,7 @@ class StabilityConfig:
     explore_collapse: StabilityRuleConfig = field(
         default_factory=lambda: StabilityRuleConfig(
             threshold=0.50, window_size=10, baseline_window=20,
-            extra={"metric_names": ["actor/entropy", "actor/entropy_coeff"]},
+            extra={"metric_names": ["actor/entropy"]},
         )
     )
 
@@ -88,14 +88,21 @@ class StabilityConfig:
         )
     )
 
-    # Performance degradation: throughput drops >20% vs same-phase baseline
+    # Performance degradation: throughput drops or phase timing rises >20%.
     performance_degradation: StabilityRuleConfig = field(
         default_factory=lambda: StabilityRuleConfig(
             threshold=0.20, window_size=5, baseline_window=20,
             extra={
-                "metric_names": ["perf/throughput", "timing_s/total", "timing_s/generate",
-                                 "timing_s/reward_compute", "timing_s/actor_update"],
-                "mode": "relative_drop",
+                "metric_modes": {
+                    "perf/throughput": "relative_drop",
+                    "timing_s/step": "relative_rise",
+                    "timing_s/total": "relative_rise",
+                    "timing_s/generate": "relative_rise",
+                    "timing_s/gen": "relative_rise",
+                    "timing_s/reward_compute": "relative_rise",
+                    "timing_s/update_actor": "relative_rise",
+                    "timing_s/actor_update": "relative_rise",
+                },
             },
         )
     )

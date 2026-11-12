@@ -13,7 +13,8 @@ from rl_diagnostics.analyzers.group_signal import (
 
 
 def _make_group(group_id="g1", step=1, rewards=None, rollout_count=5,
-                group_status="resolved", prompt="test") -> GroupRecord:
+                group_status="resolved", prompt="test", advantages=None,
+                advantage_estimator=None) -> GroupRecord:
     if rewards is None:
         rewards = [1.0, -1.0, 1.0, -1.0, 1.0]
     return GroupRecord(
@@ -22,6 +23,7 @@ def _make_group(group_id="g1", step=1, rewards=None, rollout_count=5,
         group_id=group_id, prompt_id="pid", prompt=prompt,
         source_dataset="math", difficulty=None, ground_truth="42",
         rollout_count=rollout_count, rewards=rewards,
+        advantages=advantages or [], advantage_estimator=advantage_estimator,
         responses=[f"resp{i}" for i in range(rollout_count)],
         rollout_ids=list(range(rollout_count)),
         group_status=group_status,
@@ -177,6 +179,18 @@ class TestMetrics:
         # 5 rollouts -> 10 pairs; distinguishable pairs: (0,2),(0,3),(1,2),(1,3),(4,2),(4,3) = 6
         assert result.informative_pair_ratio == pytest.approx(0.6)
 
+    def test_constant_reward_zero_advantage_is_recorded(self):
+        g = _make_group(rewards=[4.0] * 4, rollout_count=4, advantages=[0.0] * 4, advantage_estimator="grpo")
+        result = diagnose_group_signal(g, _make_quality_all_usable(count=4), correctness_labels=[True] * 4)
+        assert result.homogeneous_reward_zero_advantage is True
+        assert result.zero_advantage_ratio == 1.0
+
+    def test_constant_reward_nonzero_advantage_is_recorded(self):
+        g = _make_group(rewards=[-4.0] * 4, rollout_count=4, advantages=[-1.0] * 4, advantage_estimator="ngrpo")
+        result = diagnose_group_signal(g, _make_quality_all_usable(count=4), correctness_labels=[False] * 4)
+        assert result.homogeneous_reward_nonzero_advantage is True
+        assert result.all_wrong_negative_advantage is True
+
 
 class TestStepAggregation:
     def test_aggregate_basic(self):
@@ -209,6 +223,15 @@ class TestStepAggregation:
         assert agg.total_rollouts == 4
         assert agg.usable_rollouts == 2
         assert agg.rollout_usable_ratio == pytest.approx(0.5)
+
+    def test_advantage_aggregation(self):
+        group = _make_group(rewards=[-4.0] * 4, rollout_count=4, advantages=[-1.0] * 4, advantage_estimator="ngrpo")
+        quality = _make_quality_all_usable(count=4)
+        result = diagnose_group_signal(group, quality, correctness_labels=[False] * 4)
+        agg = aggregate_step(1, 0, [result], quality)
+        assert agg.advantage_coverage_ratio == 1.0
+        assert agg.homogeneous_reward_nonzero_advantage_groups == 1
+        assert agg.all_wrong_negative_advantage_groups == 1
 
 
 class TestConfigurableThresholds:

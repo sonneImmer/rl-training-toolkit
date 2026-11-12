@@ -169,6 +169,8 @@ def _parse_single_record(
     advantage_estimator = _extract_str_field(record, ["adv_estimator", "advantage_estimator"], record_idx)
     reward_components = _extract_object_field(record, "reward_components", record_idx)
     selected_for_update = _extract_bool_field(record, ["selected_for_update"], record_idx)
+    update_candidate = _extract_bool_field(record, ["update_candidate", "selected_for_update"], record_idx)
+    actor_update_executed = _extract_bool_field(record, ["actor_update_executed"], record_idx)
     response_mask_tokens = _extract_int_field(record, "response_mask_tokens", record_idx)
     policy_signal_tokens = _extract_int_field(record, "policy_signal_tokens", record_idx)
     prediction = _extract_str_field(record, ["pred", "prediction"], record_idx)
@@ -238,6 +240,8 @@ def _parse_single_record(
         advantage_estimator=advantage_estimator,
         reward_components=reward_components,
         selected_for_update=selected_for_update,
+        update_candidate=update_candidate,
+        actor_update_executed=actor_update_executed,
         response_mask_tokens=response_mask_tokens,
         policy_signal_tokens=policy_signal_tokens,
         prediction=prediction,
@@ -409,6 +413,8 @@ def parse_rollout_dir(
             rewards = [r.training_reward for r in rollouts if r.training_reward is not None]
             advantages = [r.advantage for r in rollouts]
             selected_for_update = [r.selected_for_update for r in rollouts]
+            update_candidate = [r.update_candidate for r in rollouts]
+            actor_update_executed = [r.actor_update_executed for r in rollouts]
             responses = [r.response for r in rollouts]
             rollout_ids = [r.rollout_id for r in rollouts]
             
@@ -431,6 +437,8 @@ def parse_rollout_dir(
                 advantages=advantages,
                 advantage_estimator=first.advantage_estimator if first else None,
                 selected_for_update=selected_for_update,
+                update_candidate=update_candidate,
+                actor_update_executed=actor_update_executed,
                 responses=responses,
                 rollout_ids=rollout_ids,
                 source_file=filepath,

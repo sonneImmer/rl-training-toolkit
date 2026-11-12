@@ -11,19 +11,22 @@ set -Eeuo pipefail
 : "${CODE_REVISION:=unknown}"
 : "${RANDOM_SEED:=42}"
 : "${ADV_ESTIMATOR:=grpo}"
+: "${ALGORITHM_PROFILE:=$ADV_ESTIMATOR}"
 : "${REWARD_FILE:=amlsim_reward.py}"
 : "${REWARD_RULE_ID:=amlsim_risk_typology_evidence_v1}"
 : "${REWARD_MIN:=-4.0}"
 : "${REWARD_MAX:=4.0}"
 : "${NGRPO_MAX_REWARD:=$REWARD_MAX}"
-if [[ "$ADV_ESTIMATOR" != "grpo" && "$ADV_ESTIMATOR" != "ngrpo" ]]; then
-  echo "ADV_ESTIMATOR must be grpo or ngrpo" >&2
-  exit 1
-fi
+case "$ALGORITHM_PROFILE" in
+  grpo) ADV_ESTIMATOR=grpo ;;
+  ngrpo) ADV_ESTIMATOR=ngrpo ;;
+  ppo) ADV_ESTIMATOR=gae ;;
+  *) echo "ALGORITHM_PROFILE must be grpo, ngrpo, or ppo" >&2; exit 1 ;;
+esac
 
 TOOLS_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 mkdir -p "$RUN_ROOT"
-RUN_DIR=$(mktemp -d "$RUN_ROOT/amlsim-rl.XXXXXXXX")
+RUN_DIR=$(mktemp -d "$RUN_ROOT/amlsim-$ALGORITHM_PROFILE.XXXXXXXX")
 export VLLM_ASCEND_ENABLE_NZ=0
 export HYDRA_FULL_ERROR=1
 export HCCL_CONNECT_TIMEOUT=600
@@ -40,7 +43,7 @@ TENSOR_PARALLEL_SIZE=4
 if [[ "$DEVICE_COUNT" -lt 4 ]]; then
   TENSOR_PARALLEL_SIZE="$DEVICE_COUNT"
 fi
-export DEVICE_COUNT TENSOR_PARALLEL_SIZE MODEL_PATH DATA_DIR TOTAL_STEPS SAVE_FREQ IMAGE_NAME CODE_REVISION RANDOM_SEED ADV_ESTIMATOR REWARD_FILE REWARD_RULE_ID REWARD_MIN REWARD_MAX NGRPO_MAX_REWARD
+export DEVICE_COUNT TENSOR_PARALLEL_SIZE MODEL_PATH DATA_DIR TOTAL_STEPS SAVE_FREQ IMAGE_NAME CODE_REVISION RANDOM_SEED ALGORITHM_PROFILE ADV_ESTIMATOR REWARD_FILE REWARD_RULE_ID REWARD_MIN REWARD_MAX NGRPO_MAX_REWARD
 
 python3 "$TOOLS_DIR/preflight_amlsim.py" \
   --data "$DATA_DIR" --model "$MODEL_PATH" \
@@ -57,9 +60,14 @@ manifest = {
     "prompt": {"contains_cot": False},
     "reward": {"definition": os.environ.get("REWARD_RULE_ID"), "min": float(os.environ.get("REWARD_MIN", "0")), "max": float(os.environ.get("REWARD_MAX", "1"))},
     "model": {"id": os.environ.get("MODEL_PATH", "/mnt/model")},
-    "training": {"algorithm": os.environ.get("ADV_ESTIMATOR", "grpo"), "seed": int(os.environ.get("RANDOM_SEED", "42")), "total_steps": int(os.environ.get("TOTAL_STEPS", "5"))},
+    "training": {
+        "algorithm": os.environ.get("ALGORITHM_PROFILE", "grpo"),
+        "advantage_estimator": os.environ.get("ADV_ESTIMATOR", "grpo"),
+        "seed": int(os.environ.get("RANDOM_SEED", "42")),
+        "total_steps": int(os.environ.get("TOTAL_STEPS", "5")),
+    },
     "resources": {"npu_count": int(os.environ["DEVICE_COUNT"]), "visible_devices": os.environ.get("ASCEND_RT_VISIBLE_DEVICES", "").split(",")},
-    "environment": {"image": os.environ.get("IMAGE_NAME", "unknown"), "image_id": "d2a7a76de939-derived", "patch_revision": "rollout-evidence-v3", "code_revision": os.environ.get("CODE_REVISION", "unknown")},
+    "environment": {"image": os.environ.get("IMAGE_NAME", "unknown"), "image_id": "d2a7a76de939-derived", "patch_revision": "rollout-evidence-v4", "code_revision": os.environ.get("CODE_REVISION", "unknown")},
 }
 Path(sys.argv[1]).write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
 PY_MANIFEST
@@ -68,9 +76,27 @@ ALGORITHM_ARGS=("algorithm.adv_estimator=$ADV_ESTIMATOR")
 if [[ "$ADV_ESTIMATOR" == "ngrpo" ]]; then
   ALGORITHM_ARGS+=("algorithm.max_reward=$NGRPO_MAX_REWARD" "algorithm.add_max_reward_num=1")
 fi
+CRITIC_ARGS=()
+if [[ "$ALGORITHM_PROFILE" == "ppo" ]]; then
+  CRITIC_ARGS+=(
+    "critic.optim.lr=1e-5"
+    "critic.model.path=$MODEL_PATH"
+    "critic.model.tokenizer_path=$MODEL_PATH"
+    "critic.model.use_remove_padding=False"
+    "critic.model.enable_gradient_checkpointing=True"
+    "critic.ppo_mini_batch_size=8"
+    "critic.ppo_micro_batch_size_per_gpu=1"
+    "critic.forward_micro_batch_size_per_gpu=1"
+    "critic.model.fsdp_config.param_offload=True"
+    "critic.model.fsdp_config.optimizer_offload=True"
+    "critic.model.fsdp_config.use_torch_compile=False"
+    "critic.use_dynamic_bsz=False"
+  )
+fi
 
 python3 -m verl.trainer.main_ppo \
   "${ALGORITHM_ARGS[@]}" \
+  "${CRITIC_ARGS[@]}" \
   data.train_files="$DATA_DIR/train.parquet" data.val_files="$DATA_DIR/test.parquet" \
   data.train_batch_size=16 data.val_batch_size=16 data.max_prompt_length=2048 data.max_response_length=160 \
   data.filter_overlong_prompts=True data.truncation=error data.shuffle=True data.seed="$RANDOM_SEED" \

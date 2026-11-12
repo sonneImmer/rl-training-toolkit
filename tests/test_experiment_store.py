@@ -54,6 +54,23 @@ def test_rollout_evidence_can_be_loaded(tmp_path):
     assert records[0]["output"] == "answer"
 
 
+def test_rollout_evidence_page_reports_total_and_completeness(tmp_path):
+    run_dir = tmp_path / "runs" / "run-page"
+    rollout_dir = run_dir / "rollouts"
+    rollout_dir.mkdir(parents=True)
+    (run_dir / "train.log").write_text("step:1 - critic/score/mean:1.0\n")
+    records = [{"output": f"answer-{index}", "score": 1.0} for index in range(5)]
+    (rollout_dir / "1.jsonl").write_text("\n".join(json.dumps(record) for record in records))
+    store = ExperimentStore(tmp_path / "runs", tmp_path / "state", stale_seconds=999999)
+    snapshot = store.refresh_all()[0]
+
+    page = store.get_rollout_page(snapshot["experiment_id"], step=1, offset=2, limit=2)
+
+    assert [record["output"] for record in page["records"]] == ["answer-2", "answer-3"]
+    assert page["total"] == 5
+    assert page["complete"] is False
+
+
 def test_standard_diagnostics_are_persisted(tmp_path):
     run_dir = tmp_path / "runs" / "run-001"
     rollout_dir = run_dir / "rollouts"

@@ -25,33 +25,14 @@ def _row(step, **overrides):
     return row
 
 
-def test_window_rules_require_consecutive_steps():
-    rows = [_row(1, clip_ratio=0.3), _row(2, clip_ratio=0.1)]
-    labels = evaluate_experiment_rules(rows, "running")
-    assert "high_truncation" not in {label["name"] for label in labels}
-
-    rows.append(_row(3, clip_ratio=0.4))
-    rows.append(_row(4, clip_ratio=0.5))
-    labels = evaluate_experiment_rules(rows, "running")
-    label = next(item for item in labels if item["name"] == "high_truncation")
-    assert label["observation"]
-    assert label["decision_reason"]
-    assert label["meaning"]
-    assert label["boundary"]
-    assert label["suggestions"]
-
-
-def test_low_group_signal_uses_reward_separation_evidence():
+def test_stability_and_group_signal_rules_are_not_duplicated_here():
     rows = [
-        _row(1, constant_score_groups=3, near_constant_groups=1, low_information_group_ratio=1.0),
-        _row(2, constant_score_groups=3, near_constant_groups=1, low_information_group_ratio=1.0),
+        _row(1, clip_ratio=0.5, grad_norm=100.0, kl_loss=1.0, low_information_group_ratio=1.0),
+        _row(2, clip_ratio=0.5, grad_norm=100.0, kl_loss=1.0, low_information_group_ratio=1.0),
     ]
     labels = evaluate_experiment_rules(rows, "running")
-    label = next(item for item in labels if item["name"] == "low_group_signal")
-    assert label["metric"] == "low_information_group_ratio"
-    assert label["evidence"][0] == {"step": 1, "value": 1.0, "numerator": 4, "denominator": 4}
-    assert "4/4" in label["observation"]
-    assert "全对或全错" in label["boundary"]
+    names = {label["name"] for label in labels}
+    assert not {"high_truncation", "low_group_signal", "gradient_spike", "kl_drift"} & names
 
 
 def test_all_correct_or_all_wrong_does_not_imply_low_reward_signal():

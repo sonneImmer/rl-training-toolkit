@@ -2,21 +2,16 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from statistics import median
 from typing import Optional
 
 
-RULE_VERSION = "1.1.0"
+RULE_VERSION = "2.0.0"
 
 
 @dataclass
 class RuleConfig:
     window_steps: int = 2
-    truncation_threshold: float = 0.20
     valid_ratio_threshold: float = 0.80
-    low_signal_ratio_threshold: float = 0.80
-    gradient_spike_multiplier: float = 3.0
-    kl_drift_multiplier: float = 3.0
 
 
 def _values(rows: list[dict], key: str) -> list[tuple[int, float]]:
@@ -182,40 +177,14 @@ def evaluate_experiment_rules(
     config = config or RuleConfig()
     labels: list[dict] = []
 
+    # Stability, policy and reward-signal trends are evaluated only by
+    # stability_analyzer. This layer keeps operational and response-quality events.
     for args in (
-        ("clip_ratio", config.truncation_threshold, "gte", "high_truncation", "输出截断偏高", "warning"),
         ("valid_ratio", config.valid_ratio_threshold, "lte", "low_valid_ratio", "有效回答比例偏低", "warning"),
-        ("low_information_group_ratio", config.low_signal_ratio_threshold, "gte", "low_group_signal", "组内奖励区分信号不足", "warning"),
     ):
         label = _window_label(rows, *args, config)
         if label:
             labels.append(label)
-
-    grad_values = _values(rows, "grad_norm")
-    if len(grad_values) >= 4:
-        baseline_values = [value for _, value in grad_values[:-1]]
-        baseline = median(baseline_values)
-        step, latest = grad_values[-1]
-        if baseline > 0 and latest >= baseline * config.gradient_spike_multiplier:
-            labels.append({
-                "name": "gradient_spike", "title": "梯度范数突增", "severity": "critical", "status": "active",
-                "first_step": step, "last_step": step, "observed_value": latest,
-                "threshold": baseline * config.gradient_spike_multiplier, "baseline_value": baseline,
-                "metric": "grad_norm", "evidence_steps": [step], "rule_version": RULE_VERSION,
-            })
-
-    kl_values = _values(rows, "kl_loss")
-    if len(kl_values) >= 6:
-        baseline = median(value for _, value in kl_values[:-3])
-        tail = kl_values[-3:]
-        tail_values = [value for _, value in tail]
-        if baseline > 0 and tail_values == sorted(tail_values) and tail_values[-1] >= baseline * config.kl_drift_multiplier:
-            labels.append({
-                "name": "kl_drift", "title": "KL 连续上升", "severity": "warning", "status": "active",
-                "first_step": tail[0][0], "last_step": tail[-1][0], "observed_value": tail_values[-1],
-                "threshold": baseline * config.kl_drift_multiplier, "baseline_value": baseline,
-                "metric": "kl_loss", "evidence_steps": [step for step, _ in tail], "rule_version": RULE_VERSION,
-            })
 
     if rows and rows[-1].get("rollouts", 0) == 0 and any(row.get("rollouts", 0) for row in rows[:-1]):
         step = int(rows[-1]["step"])

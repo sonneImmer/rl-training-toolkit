@@ -101,6 +101,8 @@ class RolloutRecord:
     advantage_estimator: Optional[str] = None
     reward_components: dict[str, Any] = field(default_factory=dict)
     selected_for_update: Optional[bool] = None
+    update_candidate: Optional[bool] = None
+    actor_update_executed: Optional[bool] = None
     response_mask_tokens: Optional[int] = None
     policy_signal_tokens: Optional[int] = None
     prediction: Optional[str] = None
@@ -140,6 +142,8 @@ class GroupRecord:
     advantages: list[Optional[float]] = field(default_factory=list)
     advantage_estimator: Optional[str] = None
     selected_for_update: list[Optional[bool]] = field(default_factory=list)
+    update_candidate: list[Optional[bool]] = field(default_factory=list)
+    actor_update_executed: list[Optional[bool]] = field(default_factory=list)
     responses: list[Optional[str]] = field(default_factory=list)
     rollout_ids: list[int] = field(default_factory=list)
     source_file: str = ""

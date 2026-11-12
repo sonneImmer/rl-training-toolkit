@@ -178,7 +178,8 @@ class TestParseRolloutDir:
         record = {
             "input": "question", "output": "answer", "score": 2.0, "uid": "group-1",
             "reward_components": {"outcome": {"weighted": 1.0}, "format": {"weighted": 1.0}},
-            "selected_for_update": True, "response_mask_tokens": 12, "policy_signal_tokens": 8,
+            "selected_for_update": True, "update_candidate": True, "actor_update_executed": True,
+            "response_mask_tokens": 12, "policy_signal_tokens": 8,
         }
         (rollout_dir / "1.jsonl").write_text(json.dumps(record) + "\n")
 
@@ -186,9 +187,13 @@ class TestParseRolloutDir:
 
         assert rollouts[0].reward_components["outcome"]["weighted"] == 1.0
         assert rollouts[0].selected_for_update is True
+        assert rollouts[0].update_candidate is True
+        assert rollouts[0].actor_update_executed is True
         assert rollouts[0].response_mask_tokens == 12
         assert rollouts[0].policy_signal_tokens == 8
         assert groups[0].selected_for_update == [True]
+        assert groups[0].update_candidate == [True]
+        assert groups[0].actor_update_executed == [True]
 
     def test_content_fingerprint_deterministic(self):
         """Content fingerprint should be deterministic."""

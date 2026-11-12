@@ -9,7 +9,11 @@ RUNS_HOST="${RUNS_HOST:-/mnt/local/transformer_files/zkx/runs}"
 TOOLS_HOST="${TOOLS_HOST:-/mnt/local/rl-training-toolkit/tools/amlsim}"
 PATCH_HOST="${PATCH_HOST:-/mnt/local/rl-training-toolkit/patch_tools}"
 ADV_ESTIMATOR="${ADV_ESTIMATOR:-grpo}"
-CODE_REVISION="${CODE_REVISION:-$(git -C /mnt/local/rl-training-toolkit rev-parse HEAD)}"
+ALGORITHM_PROFILE="${ALGORITHM_PROFILE:-$ADV_ESTIMATOR}"
+if [[ "$ALGORITHM_PROFILE" == "ppo" ]]; then
+  ADV_ESTIMATOR=gae
+fi
+CODE_REVISION="${CODE_REVISION:-$(git -C /mnt/local/rl-training-toolkit describe --always --dirty)}"
 NPU_COUNT="${NPU_COUNT:-8}"
 HOST_IP="${HOST_IP:-$(hostname -I | awk '{print $1}')}"
 HCCL_INTERFACE="${HCCL_INTERFACE:-vlan699}"
@@ -32,7 +36,7 @@ exec docker run -d \
   -e ASCEND_RT_VISIBLE_DEVICES="$VISIBLE_DEVICES" -e TOTAL_STEPS="${TOTAL_STEPS:-5}" -e SAVE_FREQ="${SAVE_FREQ:-${TOTAL_STEPS:-5}}" \
   -e HCCL_WHITELIST_DISABLE=1 -e HCCL_SOCKET_IFNAME="$HCCL_INTERFACE" -e HCCL_CONNECT_TIMEOUT=600 \
   -e MODEL_PATH=/mnt/model -e DATA_DIR=/mnt/data -e RUN_ROOT=/mnt/runs/amlsim-rl-$(date +%Y%m%d) \
-  -e IMAGE_NAME="$IMAGE" -e CODE_REVISION="$CODE_REVISION" -e RANDOM_SEED="${RANDOM_SEED:-42}" -e ADV_ESTIMATOR="$ADV_ESTIMATOR" \
+  -e IMAGE_NAME="$IMAGE" -e CODE_REVISION="$CODE_REVISION" -e RANDOM_SEED="${RANDOM_SEED:-42}" -e ALGORITHM_PROFILE="$ALGORITHM_PROFILE" -e ADV_ESTIMATOR="$ADV_ESTIMATOR" \
   -e REWARD_FILE="${REWARD_FILE:-amlsim_reward.py}" -e REWARD_RULE_ID="${REWARD_RULE_ID:-amlsim_risk_typology_evidence_v1}" \
   -e REWARD_MIN="${REWARD_MIN:--4.0}" -e REWARD_MAX="${REWARD_MAX:-4.0}" -e NGRPO_MAX_REWARD="${NGRPO_MAX_REWARD:-${REWARD_MAX:-4.0}}" \
   "$IMAGE" bash -lc 'python3 /mnt/patch_tools/patch_verl_rollout_evidence.py apply --verl-root /workspace/verl --backup-dir /tmp/verl_rollout_evidence_backup && python3 /mnt/patch_tools/patch_verl_rollout_evidence.py check --verl-root /workspace/verl; if [[ "$ADV_ESTIMATOR" == "ngrpo" ]]; then python3 /mnt/patch_tools/patch_verl_ngrpo.py apply --verl-root /workspace/verl --backup-dir /tmp/verl_ngrpo_backup && python3 /mnt/patch_tools/patch_verl_ngrpo.py check --verl-root /workspace/verl; fi; exec bash /mnt/tools/run_amlsim_rl.sh'

@@ -132,7 +132,7 @@ def _check_explore_collapse(
             window_med = _median(window_vals)
             if abs(baseline_med) < 1e-12:
                 continue
-            drop_pct = abs(baseline_med - window_med) / abs(baseline_med)
+            drop_pct = (baseline_med - window_med) / abs(baseline_med)
             if drop_pct > cfg.threshold:
                 window_steps = [s for s, _ in series[-cfg.window_size:]]
                 alerts.append(StabilityAlert(
@@ -450,13 +450,13 @@ def _check_reward_signal_degradation(
 def _check_performance_degradation(
     metrics: list[StepMetric], cfg: StabilityRuleConfig, config_version: str,
 ) -> list[StabilityAlert]:
-    """Rule: throughput drops >20% vs same-phase baseline."""
+    """Rule: throughput drops or phase timing rises vs same-phase baseline."""
     alerts = []
     if not cfg.enabled:
         return alerts
-    names = cfg.extra.get("metric_names", ["perf/throughput"])
+    metric_modes = cfg.extra.get("metric_modes", {"perf/throughput": "relative_drop"})
     for phase in ("train", "validation", "checkpoint"):
-        for name in names:
+        for name, mode in metric_modes.items():
             series = _extract_series(metrics, name, phase)
             if len(series) < cfg.baseline_window + cfg.window_size:
                 continue
@@ -466,8 +466,13 @@ def _check_performance_degradation(
             window_med = _median(window_vals)
             if abs(baseline_med) < 1e-12:
                 continue
-            drop = (baseline_med - window_med) / abs(baseline_med)
-            if drop > cfg.threshold:
+            if mode == "relative_rise":
+                change = (window_med - baseline_med) / abs(baseline_med)
+                change_text = "rose"
+            else:
+                change = (baseline_med - window_med) / abs(baseline_med)
+                change_text = "dropped"
+            if change > cfg.threshold:
                 window_steps = [s for s, _ in series[-cfg.window_size:]]
                 alerts.append(StabilityAlert(
                     rule_name="performance_degradation",
@@ -479,7 +484,7 @@ def _check_performance_degradation(
                     window_steps=window_steps,
                     phase=phase,
                     description=(
-                        f"Throughput dropped {drop:.1%} from baseline "
+                        f"{name} {change_text} {change:.1%} from baseline "
                         f"{baseline_med:.2f} to {window_med:.2f} (phase={phase})"
                     ),
                     investigation_hints=[

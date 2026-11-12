@@ -36,6 +36,16 @@ class GroupSignalResult:
     correctness_ratio: Optional[float] = None
     correctness_type: Optional[str] = None  # all/mostly correct, all/mostly wrong, mixed, unknown, partial
     diagnostic_reason: str = ""
+    advantage_estimator: Optional[str] = None
+    advantage_recorded_count: int = 0
+    positive_advantage_count: int = 0
+    negative_advantage_count: int = 0
+    zero_advantage_count: int = 0
+    nonzero_advantage_ratio: Optional[float] = None
+    zero_advantage_ratio: Optional[float] = None
+    homogeneous_reward_nonzero_advantage: bool = False
+    homogeneous_reward_zero_advantage: bool = False
+    all_wrong_negative_advantage: bool = False
 
     def to_dict(self) -> dict:
         from dataclasses import asdict
@@ -205,6 +215,17 @@ def diagnose_group_signal(
         "positive", "non_positive", "mixed_reward",
     )
 
+    advantages = [float(value) for value in group.advantages if _is_finite(value)]
+    advantage_recorded_count = len(advantages)
+    positive_advantage_count = sum(value > config.abs_epsilon for value in advantages)
+    negative_advantage_count = sum(value < -config.abs_epsilon for value in advantages)
+    zero_advantage_count = advantage_recorded_count - positive_advantage_count - negative_advantage_count
+    nonzero_advantage_ratio = (
+        (positive_advantage_count + negative_advantage_count) / advantage_recorded_count
+        if advantage_recorded_count else None
+    )
+    zero_advantage_ratio = zero_advantage_count / advantage_recorded_count if advantage_recorded_count else None
+
     # Layer 2: Constant score (all same within tolerance)
     if unique_count <= 1:
         signal_type = "constant_score"
@@ -252,6 +273,13 @@ def diagnose_group_signal(
     if correctness_type is not None:
         diag_reason += f"; correctness={correctness_type}"
 
+    homogeneous_reward = signal_type in ("constant_score", "near_constant_score")
+    homogeneous_nonzero = bool(homogeneous_reward and advantage_recorded_count and nonzero_advantage_ratio)
+    homogeneous_zero = bool(homogeneous_reward and advantage_recorded_count and zero_advantage_count == advantage_recorded_count)
+    all_wrong_negative = bool(
+        correctness_type == "all_wrong" and advantage_recorded_count and negative_advantage_count > 0
+    )
+
     return GroupSignalResult(
         experiment_id=exp_id, step=step, group_id=gid,
         signal_type=signal_type,
@@ -270,6 +298,16 @@ def diagnose_group_signal(
         correctness_ratio=correctness_ratio,
         correctness_type=correctness_type,
         diagnostic_reason=diag_reason,
+        advantage_estimator=group.advantage_estimator,
+        advantage_recorded_count=advantage_recorded_count,
+        positive_advantage_count=positive_advantage_count,
+        negative_advantage_count=negative_advantage_count,
+        zero_advantage_count=zero_advantage_count,
+        nonzero_advantage_ratio=nonzero_advantage_ratio,
+        zero_advantage_ratio=zero_advantage_ratio,
+        homogeneous_reward_nonzero_advantage=homogeneous_nonzero,
+        homogeneous_reward_zero_advantage=homogeneous_zero,
+        all_wrong_negative_advantage=all_wrong_negative,
     )
 
 
@@ -325,6 +363,12 @@ class StepAggregation:
     mostly_correct_group_ratio: Optional[float] = None
     mostly_wrong_group_ratio: Optional[float] = None
     mean_informative_pair_ratio: float = 0.0
+    advantage_recorded_groups: int = 0
+    advantage_coverage_ratio: float = 0.0
+    zero_advantage_group_ratio: Optional[float] = None
+    homogeneous_reward_nonzero_advantage_groups: int = 0
+    homogeneous_reward_zero_advantage_groups: int = 0
+    all_wrong_negative_advantage_groups: int = 0
 
     def to_dict(self) -> dict:
         from dataclasses import asdict
@@ -376,6 +420,16 @@ def aggregate_step(
     # Mean informative pair ratio
     informative_ratios = [g.informative_pair_ratio for g in analyzable if g.signal_type != "insufficient_group"]
     mean_ipr = sum(informative_ratios) / len(informative_ratios) if informative_ratios else 0.0
+    advantage_groups = [g for g in analyzable if g.advantage_recorded_count > 0]
+    advantage_recorded_groups = len(advantage_groups)
+    advantage_coverage_ratio = advantage_recorded_groups / analyzable_count if analyzable_count else 0.0
+    zero_advantage_groups = sum(1 for g in advantage_groups if g.zero_advantage_ratio == 1.0)
+    zero_advantage_group_ratio = (
+        zero_advantage_groups / advantage_recorded_groups if advantage_recorded_groups else None
+    )
+    homogeneous_nonzero = sum(1 for g in analyzable if g.homogeneous_reward_nonzero_advantage)
+    homogeneous_zero = sum(1 for g in analyzable if g.homogeneous_reward_zero_advantage)
+    all_wrong_negative = sum(1 for g in analyzable if g.all_wrong_negative_advantage)
 
     return StepAggregation(
         step=step, epoch=epoch,
@@ -398,4 +452,10 @@ def aggregate_step(
         mostly_correct_group_ratio=mostly_correct_ratio,
         mostly_wrong_group_ratio=mostly_wrong_ratio,
         mean_informative_pair_ratio=mean_ipr,
+        advantage_recorded_groups=advantage_recorded_groups,
+        advantage_coverage_ratio=advantage_coverage_ratio,
+        zero_advantage_group_ratio=zero_advantage_group_ratio,
+        homogeneous_reward_nonzero_advantage_groups=homogeneous_nonzero,
+        homogeneous_reward_zero_advantage_groups=homogeneous_zero,
+        all_wrong_negative_advantage_groups=all_wrong_negative,
     )

@@ -22,6 +22,7 @@ from .evaluation_store import find_evaluation_tradeoffs, load_evaluations
 from .live_monitor import build_snapshot, latest_rollouts
 from .parsers.log_parser import parse_log
 from .parsers.rollout_parser import parse_rollout_dir
+from .recommendation_rules import build_mechanism_diagnostics
 
 
 ERROR_MARKERS = re.compile(r"Traceback|RuntimeError|OutOfMemory|ERROR|Exception")
@@ -166,7 +167,13 @@ class ExperimentStore:
             "fields": fields,
         }
 
-    def _build_diagnostics(self, experiment_id: str, rollout_dir: Path, metrics: list) -> dict:
+    def _build_diagnostics(
+        self,
+        experiment_id: str,
+        rollout_dir: Path,
+        metrics: list,
+        algorithm: str | None = None,
+    ) -> dict:
         if not rollout_dir.is_dir():
             return {
                 "quality_by_step": [],
@@ -174,6 +181,7 @@ class ExperimentStore:
                 "group_details": [],
                 "parser_warnings": [],
                 "stability": self._stability_payload(metrics, []),
+                "mechanism": build_mechanism_diagnostics(algorithm, algorithm, [], []),
             }
 
         rollouts, groups, warnings = parse_rollout_dir(str(rollout_dir), experiment_id)
@@ -210,12 +218,14 @@ class ExperimentStore:
                 "counts": dict(sorted(counts.items())),
             })
 
+        estimator = next((group.advantage_estimator for group in groups if group.advantage_estimator), algorithm)
         return {
             "quality_by_step": quality_by_step,
             "group_signal_by_step": [item.to_dict() for item in step_aggs],
             "group_details": [item.to_dict() for item in group_results],
             "parser_warnings": warnings,
             "stability": self._stability_payload(metrics, step_aggs),
+            "mechanism": build_mechanism_diagnostics(algorithm, estimator, group_results, step_aggs),
         }
 
     @staticmethod
@@ -234,6 +244,8 @@ class ExperimentStore:
             }
 
         names = rule_config.extra.get("metric_names", [])
+        if rule_name == "performance_degradation":
+            names = list(rule_config.extra.get("metric_modes", {}))
         candidates = []
         for name in names:
             series = sorted(
@@ -261,7 +273,11 @@ class ExperimentStore:
         elif rule_name == "kl_drift" and abs(baseline) > 1e-12:
             triggered = abs(observed) / abs(baseline) > rule_config.threshold
         elif rule_name == "performance_degradation" and abs(baseline) > 1e-12:
-            triggered = (baseline - observed) / abs(baseline) > rule_config.threshold
+            mode = rule_config.extra.get("metric_modes", {}).get(metric_name, "relative_drop")
+            if mode == "relative_rise":
+                triggered = (observed - baseline) / abs(baseline) > rule_config.threshold
+            else:
+                triggered = (baseline - observed) / abs(baseline) > rule_config.threshold
         elif rule_name == "gradient_spike":
             prior = [value for _, value in series[:-1]]
             center = statistics.median(prior)
@@ -299,7 +315,7 @@ class ExperimentStore:
             "gradient_spike": "整体梯度范数显著高于历史水平，参数更新可能出现尖峰。",
             "output_truncation": "较多回答达到最大生成长度，回答可能没有完整结束。",
             "reward_signal_degradation": "同组 Reward 相同或接近的比例偏高，组内相对学习信号不足。",
-            "performance_degradation": "训练性能指标相对基线下降，需要用独立评测确认实际影响。",
+            "performance_degradation": "吞吐下降或训练阶段耗时上升，表示相同预算下的执行效率可能变差。",
         }
         boundaries = {
             "explore_collapse": "Entropy 下降不等于效果必然变差，也可能是模型变得更确定。",
@@ -308,7 +324,7 @@ class ExperimentStore:
             "gradient_spike": "Grad Norm 汇总了所有参与反向传播的样本和 Token，不能反推单个 Group 的贡献。",
             "output_truncation": "达到长度上限不直接等于答案错误。",
             "reward_signal_degradation": "低信息 Group 不等于总梯度为零；KL 等损失仍可能贡献梯度。",
-            "performance_degradation": "训练日志指标不能替代独立测试集结果。",
+            "performance_degradation": "性能变化不等于模型效果变化，也不能只凭单项资源曲线确定根因。",
         }
         suggestions = {
             "explore_collapse": ["联看 Reward、KL 与独立评测。", "抽查输出是否重复或过早固定为单一模式。"],
@@ -317,7 +333,7 @@ class ExperimentStore:
             "gradient_spike": ["检查同 Step 的异常 Reward、KL 和 Clip Fraction。", "连续出现时再检查学习率与梯度裁剪。"],
             "output_truncation": ["打开 Rollout 检查输出末尾。", "核对最大生成长度、EOS 和格式要求。"],
             "reward_signal_degradation": ["检查同组 Reward 和 Advantage 是否大量相同。", "核对 Reward 区分度与每题 Rollout 数量。"],
-            "performance_degradation": ["使用固定独立测试集复评。", "按业务类别查看是否存在局部退化。"],
+            "performance_degradation": ["拆分生成、Reward、Actor/Critic更新耗时。", "联看NPU利用率、通信和显存证据。"],
         }
         observed = evaluation.get("observed_value", evaluation.get("trigger_value"))
         baseline = evaluation.get("baseline_value")
@@ -380,6 +396,8 @@ class ExperimentStore:
         evaluations = []
         for rule_name, rule_config in config.get_rule_configs().items():
             required = set(rule_config.extra.get("metric_names", []))
+            if rule_name == "performance_degradation":
+                required = set(rule_config.extra.get("metric_modes", {}))
             if rule_name == "reward_signal_degradation":
                 available = bool(step_aggs)
                 sample_count = len(step_aggs)
@@ -454,7 +472,7 @@ class ExperimentStore:
         rollout_dir = run_dir / "rollouts"
         exp, metrics, parse_report = parse_log(str(log_path), experiment_id_override=experiment_id)
         live = build_snapshot(log_path, rollout_dir)
-        diagnostics = self._build_diagnostics(experiment_id, rollout_dir, metrics)
+        diagnostics = self._build_diagnostics(experiment_id, rollout_dir, metrics, exp.algorithm)
         self._merge_diagnostics(live["steps"], diagnostics)
         latest_step = live.get("latest_step")
         log_tail = self._read_log_tail(log_path)
@@ -472,7 +490,7 @@ class ExperimentStore:
         run_manifest, manifest_missing = self._load_run_manifest(run_dir)
         parsed_config = {
             "model": exp.model or run_manifest.get("model", {}).get("id", ""),
-            "algorithm": exp.algorithm or run_manifest.get("training", {}).get("algorithm", ""),
+            "algorithm": run_manifest.get("training", {}).get("algorithm") or exp.algorithm,
             "dataset": exp.dataset or run_manifest.get("dataset", {}).get("id", ""),
             "rollout_n": exp.rollout_n,
             "train_batch_size": exp.train_batch_size,
@@ -669,21 +687,43 @@ class ExperimentStore:
         }
 
     def get_rollouts(self, experiment_id: str, step: Optional[int] = None, limit: int = 12) -> list[dict]:
+        return self.get_rollout_page(experiment_id, step=step, offset=0, limit=limit)["records"]
+
+    def get_rollout_page(
+        self,
+        experiment_id: str,
+        step: Optional[int] = None,
+        offset: int = 0,
+        limit: int = 12,
+    ) -> dict:
         snapshot = self.get_experiment(experiment_id)
         if not snapshot:
-            return []
+            return {"records": [], "total": 0, "offset": offset, "limit": limit, "complete": True}
         rollout_dir = Path(snapshot["artifacts"]["rollout_dir"])
         if step is None:
-            return latest_rollouts(rollout_dir, limit)
+            records = latest_rollouts(rollout_dir, max(offset + limit, limit))
+            page = records[offset:offset + limit]
+            return {
+                "records": page,
+                "total": len(records),
+                "offset": offset,
+                "limit": limit,
+                "complete": offset + len(page) >= len(records),
+            }
         path = rollout_dir / f"{step}.jsonl"
         if not path.is_file():
-            return []
+            return {"records": [], "total": 0, "offset": offset, "limit": limit, "complete": True}
         records = []
         for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
             try:
                 records.append(json.loads(line))
             except json.JSONDecodeError:
                 continue
-            if len(records) >= limit:
-                break
-        return records
+        page = records[offset:offset + limit]
+        return {
+            "records": page,
+            "total": len(records),
+            "offset": offset,
+            "limit": limit,
+            "complete": offset + len(page) >= len(records),
+        }

@@ -41,6 +41,9 @@ MODEL_HOST=/path/to/sft/huggingface ADV_ESTIMATOR=grpo TOTAL_STEPS=5 SAVE_FREQ=1
 
 MODEL_HOST=/path/to/sft/huggingface ADV_ESTIMATOR=ngrpo TOTAL_STEPS=5 SAVE_FREQ=1 \
   bash tools/amlsim/launch_amlsim_rl.sh
+
+# Controlled GRPO/NGRPO/PPO comparison. PPO uses VERL GAE + Critic, not a renamed GRPO run.
+TOTAL_STEPS=50 RANDOM_SEED=42 bash tools/amlsim/run_algorithm_comparison.sh
 ```
 
 Summarize group and typology signals:

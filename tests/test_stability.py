@@ -42,6 +42,12 @@ class TestExploreCollapse:
         assert alerts[0].baseline_value > 1.0
         assert alerts[0].trigger_value < 1.0
 
+    def test_entropy_increase_is_not_collapse(self):
+        metrics = [_make_metric(s, "actor/entropy", 1.0) for s in range(20)]
+        metrics += [_make_metric(s, "actor/entropy", 2.0) for s in range(20, 30)]
+        report = run_stability_diagnosis(metrics)
+        assert not [a for a in report.alerts if a.rule_name == "explore_collapse"]
+
     def test_disabled_rule(self):
         config = StabilityConfig()
         config.explore_collapse.enabled = False
@@ -197,6 +203,20 @@ class TestPerformanceDegradation:
         report = run_stability_diagnosis(metrics)
         alerts = [a for a in report.alerts if a.rule_name == "performance_degradation"]
         assert len(alerts) >= 1
+
+    def test_step_time_increase_detected(self):
+        metrics = [_make_metric(s, "timing_s/step", 10.0) for s in range(20)]
+        metrics += [_make_metric(s, "timing_s/step", 15.0) for s in range(20, 25)]
+        report = run_stability_diagnosis(metrics)
+        alerts = [a for a in report.alerts if a.rule_name == "performance_degradation"]
+        assert alerts
+        assert alerts[0].metric_name == "timing_s/step"
+
+    def test_step_time_decrease_is_not_degradation(self):
+        metrics = [_make_metric(s, "timing_s/step", 10.0) for s in range(20)]
+        metrics += [_make_metric(s, "timing_s/step", 5.0) for s in range(20, 25)]
+        report = run_stability_diagnosis(metrics)
+        assert not [a for a in report.alerts if a.rule_name == "performance_degradation"]
 
 
 class TestReportStructure:

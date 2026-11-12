@@ -1,9 +1,12 @@
 const state = {
   experiments: [],
-  rolloutReading: false,
+  rolloutLoading: false,
   selectedId: null,
   detail: null,
   rolloutEvidence: null,
+  detailRequestId: 0,
+  rolloutRequestId: 0,
+  uiByExperiment: {},
   chartView: {
     experimentId: null,
     endStep: null,
@@ -43,7 +46,7 @@ function groupRollouts(records) {
   const groups = new Map();
   records.forEach((record, index) => {
     const groupId = String(record.uid ?? record.group_id ?? record.input ?? record.prompt ?? `unknown-${index}`);
-    const group = groups.get(groupId) || { records: [] };
+    const group = groups.get(groupId) || { groupId, records: [] };
     group.records.push(record);
     groups.set(groupId, group);
   });
@@ -60,9 +63,9 @@ function rolloutGroupsHtml(records) {
     const negative = advantages.filter((value) => value < -1e-8).length;
     const zero = advantages.length - positive - negative;
     const signal = advantages.length ? `正 ${positive} · 负 ${negative} · 零 ${zero}` : "Advantage 未记录";
-    return `<details class="rollout-group">
+    return `<details class="rollout-group" data-ui-key="group:${escapeHtml(group.groupId)}">
       <summary><strong>Group #${groupIndex + 1}</strong><span>${group.records.length} responses</span><span>${signal}</span></summary>
-      <div class="rollout-group-body">${groupComponentHtml(group.records)}${group.records.map((record, index) => `<details class="rollout-item">
+      <div class="rollout-group-body">${groupComponentHtml(group.records)}${group.records.map((record, index) => `<details class="rollout-item" data-ui-key="response:${escapeHtml(group.groupId)}:${escapeHtml(record.rollout_id ?? index)}">
         <summary><strong>#${index + 1}</strong><span>reward ${escapeHtml(record.score ?? record.reward ?? "-")}</span><span>adv ${escapeHtml(record.advantage ?? "-")}</span><span>${escapeHtml(advantageDirection(record.advantage))}</span><span>${escapeHtml(selectionText(record))}</span><span>acc ${escapeHtml(record.acc ?? "-")}</span><span>pred ${escapeHtml(record.pred ?? "-")}</span></summary>
         ${responseComponentsHtml(record)}
         <div class="selection-evidence"><span>response mask token ${record.response_mask_tokens ?? "未记录"}</span><span>policy signal token ${record.policy_signal_tokens ?? "未记录"}</span></div>
@@ -74,8 +77,10 @@ function rolloutGroupsHtml(records) {
 
 
 function selectionText(record) {
-  if (record.selected_for_update === null || record.selected_for_update === undefined) return "更新状态未记录";
-  return record.selected_for_update ? "已进入 Actor 更新批次" : "未进入 Actor 更新批次";
+  if (record.actor_update_executed === true) return "Actor 更新已执行";
+  const candidate = record.update_candidate ?? record.selected_for_update;
+  if (candidate === null || candidate === undefined) return "更新证据未记录";
+  return candidate ? "更新候选（执行未记录）" : "未进入更新候选";
 }
 
 function componentValue(component) {
@@ -118,7 +123,7 @@ function evaluationHtml(evaluation) {
   const percentKeys = new Set(["risk_accuracy", "risk_precision", "risk_recall", "risk_f1", "risk_f2", "typology_accuracy", "format_valid_rate", "evidence_f1", "accuracy", "precision", "recall", "f1", "f2"]);
   const summaryCards = Object.entries(summary).map(([key, value]) => diagnosticMetric(key, percentKeys.has(key) ? percent(value) : value)).join("");
   const perClass = Object.entries(evaluation.per_class || {});
-  return `<details class="evaluation-item" open><summary><strong>${escapeHtml(evaluation.evaluation_id)}</strong><span>checkpoint step ${evaluation.checkpoint_step ?? "未记录"}</span><span>${escapeHtml(evaluation.split || "test")}</span></summary>
+  return `<details class="evaluation-item" data-ui-key="evaluation:${escapeHtml(evaluation.evaluation_id)}" open><summary><strong>${escapeHtml(evaluation.evaluation_id)}</strong><span>checkpoint step ${evaluation.checkpoint_step ?? "未记录"}</span><span>${escapeHtml(evaluation.split || "test")}</span></summary>
     <div class="evaluation-body"><div class="diagnostic-grid">${summaryCards || diagnosticMetric("状态", "暂无摘要")}</div>
     ${perClass.length ? `<div class="table-scroll"><table class="facts-table"><thead><tr><th>类别</th><th>样本</th><th>正确</th><th>准确率</th></tr></thead><tbody>${perClass.map(([name, row]) => `<tr><td>${escapeHtml(name)}</td><td>${row.samples ?? "-"}</td><td>${row.correct ?? "-"}</td><td>${percent(row.accuracy)}</td></tr>`).join("")}</tbody></table></div>` : ""}</div></details>`;
 }
@@ -144,15 +149,14 @@ async function fetchJson(url) {
 
 async function loadExperiments(force = false) {
   try {
-    const detailState = captureDetailState();
+    const detailState = rememberDetailState();
     if (force) await fetchJson("/api/refresh");
     state.experiments = await fetchJson("/api/experiments");
     el("connectionStatus").textContent = `已连接 · ${new Date().toLocaleTimeString("zh-CN", { hour12: false })}`;
     renderList();
     if (!state.selectedId && state.experiments.length) {
       await selectExperiment(state.experiments[0].experiment_id);
-    } else if (state.selectedId && (!state.rolloutReading || force)) {
-      if (force) state.rolloutReading = false;
+    } else if (state.selectedId && !state.rolloutLoading) {
       await selectExperiment(state.selectedId, false, detailState);
     }
   } catch (error) {
@@ -203,43 +207,63 @@ function renderList() {
 
 function captureDetailState() {
   if (!state.selectedId) return null;
+  const detail = el("detail");
   const content = el("rolloutContent");
   const step = el("rolloutStep");
-  if (!content || !step) return state.rolloutEvidence;
+  if (!detail) return state.uiByExperiment[state.selectedId] || null;
   return {
-    rolloutStep: step.value,
-    rolloutHtml: content.innerHTML,
-    rolloutOpen: [...content.querySelectorAll("details")].map((item) => item.open),
+    rolloutStep: step?.value ?? null,
+    rolloutHtml: content?.innerHTML ?? null,
+    detailOpen: Object.fromEntries([...detail.querySelectorAll("details[data-ui-key]")].map((item) => [item.dataset.uiKey, item.open])),
+    scrollTop: detail.scrollTop,
+    chartEndStep: state.chartView.experimentId === state.selectedId ? state.chartView.endStep : null,
   };
 }
 
+function rememberDetailState() {
+  const captured = captureDetailState();
+  if (state.selectedId && captured) state.uiByExperiment[state.selectedId] = captured;
+  return captured;
+}
+
 function restoreDetailState(detailState) {
-  if (!detailState || !el("rolloutContent")) return;
+  if (!detailState || !el("detail")) return;
   const content = el("rolloutContent");
   const step = el("rolloutStep");
-  if (detailState.rolloutHtml && detailState.rolloutHtml !== '<span class="no-labels">选择 step 查看 prompt、输出、reward、pred 和 acc。</span>') {
+  if (content && detailState.rolloutHtml && detailState.rolloutHtml !== '<span class="no-labels">选择 step 查看 prompt、输出、reward、pred 和 acc。</span>') {
     content.innerHTML = detailState.rolloutHtml;
-    step.value = detailState.rolloutStep || step.value;
-    [...content.querySelectorAll("details")].forEach((item, index) => {
-      item.open = Boolean(detailState.rolloutOpen?.[index]);
-    });
+    if (step) step.value = detailState.rolloutStep || step.value;
+    bindLoadMoreRollouts();
   }
+  Object.entries(detailState.detailOpen || {}).forEach(([key, open]) => {
+    const target = [...el("detail").querySelectorAll("details[data-ui-key]")].find((item) => item.dataset.uiKey === key);
+    if (target) target.open = Boolean(open);
+  });
+  if (detailState.chartEndStep !== null && detailState.chartEndStep !== undefined) {
+    state.chartView = { experimentId: state.selectedId, endStep: detailState.chartEndStep };
+    updateChartRange(state.detail?.steps || [], detailState.chartEndStep);
+  }
+  requestAnimationFrame(() => { el("detail").scrollTop = detailState.scrollTop || 0; });
 }
 
 async function selectExperiment(experimentId, scroll = true, detailState = null) {
+  if (state.selectedId && state.selectedId !== experimentId) rememberDetailState();
   const changed = state.selectedId !== experimentId;
   state.selectedId = experimentId;
   if (changed) {
     state.rolloutEvidence = null;
-    state.rolloutReading = false;
     state.chartView = { experimentId, endStep: null };
   }
+  const requestId = ++state.detailRequestId;
   renderList();
   try {
-    state.detail = await fetchJson(`/api/experiments/${encodeURIComponent(experimentId)}`);
+    const detail = await fetchJson(`/api/experiments/${encodeURIComponent(experimentId)}`);
+    if (requestId !== state.detailRequestId || state.selectedId !== experimentId) return;
+    state.detail = detail;
     renderDetail();
-    restoreDetailState(changed ? null : detailState);
-    if (scroll) el("detail").scrollTop = 0;
+    const savedState = changed ? state.uiByExperiment[experimentId] : (detailState || state.uiByExperiment[experimentId]);
+    restoreDetailState(savedState);
+    if (scroll && !savedState) el("detail").scrollTop = 0;
   } catch (error) {
     el("detail").innerHTML = `<section class="empty-state"><h2>读取失败</h2><p>${escapeHtml(error.message)}</p></section>`;
   }
@@ -308,8 +332,43 @@ function stabilityHtml(evaluations) {
   const visible = evaluations.filter((item) => item.status !== "not_evaluated");
   const unavailable = evaluations.filter((item) => item.status === "not_evaluated");
   const cards = visible.map(ruleStatusHtml).join("");
-  const unavailableHtml = unavailable.length ? `<details class="unavailable-rules"><summary>暂不能判断的规则（${unavailable.length}）</summary><div>${unavailable.map((item) => `<p><strong>${escapeHtml(item.title || item.rule_name)}</strong><span>${escapeHtml(item.observation)}</span></p>`).join("")}</div></details>` : "";
+  const unavailableHtml = unavailable.length ? `<details class="unavailable-rules" data-ui-key="stability:unavailable"><summary>暂不能判断的规则（${unavailable.length}）</summary><div>${unavailable.map((item) => `<p><strong>${escapeHtml(item.title || item.rule_name)}</strong><span>${escapeHtml(item.observation)}</span></p>`).join("")}</div></details>` : "";
   return cards + unavailableHtml || '<span class="no-labels">暂无稳定性评估数据。</span>';
+}
+
+function mechanismCardHtml(item) {
+  const actions = item.candidate_actions || [];
+  const revalidation = item.revalidation || [];
+  return `<article class="diagnosis-card mechanism-card ${escapeHtml(item.status)}">
+    <div class="diagnosis-header"><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.status)} · ${escapeHtml(item.confidence)}</span></div>
+    <div class="explanation-grid">
+      <div><span>观察事实</span><p>${escapeHtml(item.observation)}</p></div>
+      <div><span>算法机制</span><p>${escapeHtml(item.mechanism)}</p></div>
+      <div><span>结论边界</span><p>${escapeHtml(item.boundary)}</p></div>
+      <div><span>证据 Step</span><p>${escapeHtml((item.evidence_steps || []).join("、") || "未记录")}</p></div>
+      ${actions.length ? `<div class="suggestion-row"><span>候选措施</span><p>${actions.map(escapeHtml).join(" ")}</p></div>` : ""}
+      ${revalidation.length ? `<div class="suggestion-row"><span>复验方案</span><p>${revalidation.map(escapeHtml).join(" ")}</p></div>` : ""}
+    </div>
+  </article>`;
+}
+
+function mechanismHtml(mechanism) {
+  if (!mechanism) return '<span class="no-labels">算法机制证据尚未生成。</span>';
+  const profile = mechanism.algorithm_profile || {};
+  const summary = mechanism.summary || {};
+  return `<div class="mechanism-profile">
+      <strong>${escapeHtml(profile.display_name || "算法未知")}</strong>
+      <span>${escapeHtml(profile.mechanism || "未识别有效 advantage 机制")}</span>
+    </div>
+    <div class="diagnostic-grid mechanism-summary">
+      ${diagnosticMetric("可分析 Group", summary.analyzable_groups ?? "-")}
+      ${diagnosticMetric("Advantage 已记录", summary.advantage_recorded_groups ?? "-")}
+      ${diagnosticMetric("同质 Reward", summary.homogeneous_reward_groups ?? "-")}
+      ${diagnosticMetric("同质且零 Advantage", summary.homogeneous_zero_advantage_groups ?? "-")}
+      ${diagnosticMetric("同质且非零 Advantage", summary.homogeneous_nonzero_advantage_groups ?? "-")}
+      ${diagnosticMetric("全错且负 Advantage", summary.all_wrong_negative_advantage_groups ?? "-")}
+    </div>
+    <div class="rule-list">${(mechanism.cards || []).map(mechanismCardHtml).join("")}</div>`;
 }
 function experimentOptions(selectedId) {
   return state.experiments.map((item) => `<option value="${escapeHtml(item.experiment_id)}" ${item.experiment_id === selectedId ? "selected" : ""}>${escapeHtml(item.name || item.experiment_id)}</option>`).join("");
@@ -328,6 +387,7 @@ function renderDetail() {
   const latestSignal = rows.at(-1) || {};
   const quality = latestSignal.rollout_quality_counts || {};
   const stability = diagnostics.stability || {};
+  const mechanism = diagnostics.mechanism || {};
   el("detail").innerHTML = `
     <section class="detail-header">
       <div class="detail-title">
@@ -398,6 +458,11 @@ function renderDetail() {
     </section>
 
     <section class="section-band">
+      <div class="section-heading"><h3>算法机制诊断</h3><span>事实 → 机制 → 候选措施 → 独立复验</span></div>
+      <div class="section-content mechanism-diagnostics">${mechanismHtml(mechanism)}</div>
+    </section>
+
+    <section class="section-band">
       <div class="section-heading"><h3>最近步骤</h3><span>${rows.length} 个 step</span></div>
       <div class="table-scroll"><table class="facts-table"><thead><tr>
         <th>step</th><th>rollout</th><th>有效</th><th>正奖励</th><th>全对</th><th>近全对</th><th>混合</th><th>近全错</th><th>全错</th><th>截断</th><th>KL</th><th>grad</th>
@@ -436,7 +501,7 @@ function renderDetail() {
       <div id="rolloutContent" class="section-content"><span class="no-labels">选择 step 查看 prompt、输出、reward、pred 和 acc。</span></div>
     </section>`;
 
-  el("loadRollouts").addEventListener("click", loadRollouts);
+  el("loadRollouts").addEventListener("click", () => loadRollouts());
   document.querySelectorAll(".evidence-step-button").forEach((button) => button.addEventListener("click", async () => {
     el("rolloutStep").value = button.dataset.step;
     el("rolloutEvidenceSection").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -637,19 +702,35 @@ function drawComparisonChart(series, metric) {
   })));
 }
 
-async function loadRollouts() {
-  state.rolloutReading = true;
+function bindLoadMoreRollouts() {
+  const button = el("loadMoreRollouts");
+  if (!button) return;
+  button.addEventListener("click", () => loadRollouts(Number(button.dataset.offset), true));
+}
+
+async function loadRollouts(offset = 0, append = false) {
+  const experimentId = state.selectedId;
+  const requestId = ++state.rolloutRequestId;
+  state.rolloutLoading = true;
   const step = el("rolloutStep").value;
   const content = el("rolloutContent");
-  content.textContent = "正在读取...";
+  if (!append) content.textContent = "正在读取...";
   try {
-    const records = await fetchJson(`/api/experiments/${encodeURIComponent(state.selectedId)}/rollouts?step=${encodeURIComponent(step)}&limit=100`);
-    content.innerHTML = records.length
-      ? `<div class="rollout-list">${rolloutGroupsHtml(records)}</div>`
+    const page = await fetchJson(`/api/experiments/${encodeURIComponent(experimentId)}/rollouts?step=${encodeURIComponent(step)}&offset=${offset}&limit=100`);
+    if (requestId !== state.rolloutRequestId || state.selectedId !== experimentId) return;
+    const records = page.records || [];
+    const existing = append ? content.querySelector(".rollout-list")?.innerHTML || "" : "";
+    content.innerHTML = records.length || existing
+      ? `<div class="rollout-page-summary">已读取 ${Math.min(page.offset + records.length, page.total)}/${page.total} 条 · ${page.complete ? "完整" : "可继续加载"}</div><div class="rollout-list">${existing}${rolloutGroupsHtml(records)}</div>${page.complete ? "" : `<button id="loadMoreRollouts" class="load-more-rollouts" type="button" data-offset="${page.offset + records.length}">加载更多</button>`}`
       : '<span class="no-labels">该 step 没有可读取的 rollout。</span>';
+    bindLoadMoreRollouts();
     state.rolloutEvidence = captureDetailState();
+    state.uiByExperiment[experimentId] = state.rolloutEvidence;
   } catch (error) {
+    if (requestId !== state.rolloutRequestId || state.selectedId !== experimentId) return;
     content.innerHTML = `<span class="no-labels">读取失败：${escapeHtml(error.message)}</span>`;
+  } finally {
+    if (requestId === state.rolloutRequestId) state.rolloutLoading = false;
   }
 }
 
