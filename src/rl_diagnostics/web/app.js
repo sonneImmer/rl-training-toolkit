@@ -156,8 +156,10 @@ async function loadExperiments(force = false) {
     renderList();
     if (!state.selectedId && state.experiments.length) {
       await selectExperiment(state.experiments[0].experiment_id);
-    } else if (state.selectedId && !state.rolloutLoading) {
+    } else if (force && state.selectedId && !state.rolloutLoading) {
       await selectExperiment(state.selectedId, false, detailState);
+    } else if (state.selectedId) {
+      updateSelectedSummary();
     }
   } catch (error) {
     el("connectionStatus").textContent = `连接失败 · ${error.message}`;
@@ -253,6 +255,7 @@ async function selectExperiment(experimentId, scroll = true, detailState = null)
   if (changed) {
     state.rolloutEvidence = null;
     state.chartView = { experimentId, endStep: null };
+    renderDetailLoading();
   }
   const requestId = ++state.detailRequestId;
   renderList();
@@ -271,6 +274,56 @@ async function selectExperiment(experimentId, scroll = true, detailState = null)
 
 function metricItem(label, value) {
   return `<div class="metric-item"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`;
+}
+
+function progressMetric(progress) {
+  const current = progress.current_step ?? "-";
+  const total = progress.total_steps ?? "-";
+  const ratio = progress.ratio === null || progress.ratio === undefined
+    ? 0
+    : Math.max(0, Math.min(1, Number(progress.ratio)));
+  return `<div class="metric-item progress-metric">
+    <span>训练进度</span><strong id="trainingProgressValue">${escapeHtml(`${current}/${total}`)}</strong>
+    <div class="progress-track" role="progressbar" aria-label="训练进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(ratio * 100)}">
+      <div id="trainingProgressBar" class="progress-fill" style="width:${ratio * 100}%"></div>
+    </div>
+  </div>`;
+}
+
+function selectedSummary() {
+  return state.experiments.find((item) => item.experiment_id === state.selectedId) || null;
+}
+
+function updateSelectedSummary() {
+  const item = selectedSummary();
+  if (!item) return;
+  const progress = item.progress || {};
+  const ratio = progress.ratio === null || progress.ratio === undefined
+    ? 0
+    : Math.max(0, Math.min(1, Number(progress.ratio)));
+  const value = el("trainingProgressValue");
+  const bar = el("trainingProgressBar");
+  const badge = el("selectedStatusBadge");
+  if (value) value.textContent = `${progress.current_step ?? "-"}/${progress.total_steps ?? "-"}`;
+  if (bar) {
+    bar.style.width = `${ratio * 100}%`;
+    bar.parentElement?.setAttribute("aria-valuenow", String(Math.round(ratio * 100)));
+  }
+  if (badge) {
+    badge.className = `status-badge ${item.status}`;
+    badge.textContent = statusNames[item.status] || item.status;
+  }
+}
+
+function renderDetailLoading() {
+  const item = selectedSummary();
+  if (!item) return;
+  el("detail").innerHTML = `<section class="detail-header">
+      <div class="detail-title"><h2>${escapeHtml(item.name || item.experiment_id)}</h2><p>${escapeHtml(item.experiment_id)}</p></div>
+      <span id="selectedStatusBadge" class="status-badge ${escapeHtml(item.status)}">${escapeHtml(statusNames[item.status] || item.status)}</span>
+    </section>
+    <section class="metric-strip loading-metrics">${progressMetric(item.progress || {})}</section>
+    <section class="detail-loading"><strong>正在读取实验详情</strong><span>进度已从轻量索引加载，指标曲线随后显示。</span></section>`;
 }
 
 function explanationRows(item) {
@@ -394,11 +447,11 @@ function renderDetail() {
         <h2>${escapeHtml(item.name || item.experiment_id)}</h2>
         <p>${escapeHtml(item.experiment_id)} · 更新于 ${timeText(item.updated_at)}</p>
       </div>
-      <span class="status-badge ${escapeHtml(item.status)}">${escapeHtml(statusNames[item.status] || item.status)}</span>
+      <span id="selectedStatusBadge" class="status-badge ${escapeHtml(item.status)}">${escapeHtml(statusNames[item.status] || item.status)}</span>
     </section>
 
     <section class="metric-strip">
-      ${metricItem("训练进度", `${progress.current_step ?? "-"}/${progress.total_steps ?? "-"}`)}
+      ${progressMetric(progress)}
       ${metricItem("最新 Step 平均奖励", number(latest.reward_mean, 4))}
       ${metricItem("Reward 范围", `${number(latest.reward_min, 3)} ~ ${number(latest.reward_max, 3)}`)}
       ${metricItem("Reward 波动", number(latest.reward_std, 4))}

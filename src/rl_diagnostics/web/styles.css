@@ -147,6 +147,12 @@ button { cursor: pointer; }
 .metric-item:nth-last-child(-n+4) { border-bottom: 0; }
 .metric-item span { display: block; color: var(--muted); font-size: 11px; }
 .metric-item strong { display: block; margin-top: 3px; font-size: 19px; overflow: hidden; text-overflow: ellipsis; }
+.progress-track { height: 5px; margin-top: 8px; overflow: hidden; background: #e1e6eb; border-radius: 3px; }
+.progress-fill { height: 100%; background: var(--accent); transition: width 180ms ease; }
+.loading-metrics { grid-template-columns: minmax(220px, 320px); }
+.loading-metrics .metric-item { border: 0; }
+.detail-loading { display: grid; gap: 5px; padding: 18px; border: 1px solid var(--line-strong); background: var(--surface); }
+.detail-loading span { color: var(--muted); font-size: 12px; }
 
 .section-band { margin-top: 16px; background: var(--surface); border: 1px solid var(--line-strong); }
 .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 14px; border-bottom: 1px solid var(--line); background: var(--surface-subtle); }

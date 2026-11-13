@@ -70,6 +70,8 @@ def test_rollout_evidence_patcher_records_advantage(tmp_path):
         '            reward_extra_infos_to_dump = reward_extra_infos_dict.copy()\n'
         '            reward_extra_infos_to_dump["uid"] = uid_list\n'
         '            reward_extra_infos_to_dump["data_source"] = data_source_list\n'
+        '    def _log_rollout_data(\n'
+        '                    # Log rollout generations if enabled\n'
     )
     backup = tmp_path / "backup"
 
@@ -83,3 +85,6 @@ def test_rollout_evidence_patcher_records_advantage(tmp_path):
     assert 'reward_extra_infos_to_dump["actor_update_executed"] = actor_update_executed' in patched
     assert 'reward_extra_infos_to_dump["response_mask_tokens"] = response_mask_tokens' in patched
     assert 'reward_extra_infos_to_dump["policy_signal_tokens"] = policy_signal_tokens' in patched
+    assert 'def _log_rl_diagnostic_summary(' in patched
+    assert 'self._log_rl_diagnostic_summary(batch)' in patched
+    assert '[RL_DIAG_SUMMARY]' in patched

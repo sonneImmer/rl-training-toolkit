@@ -54,6 +54,14 @@ python3 patch_tools/patch_verl_rollout_evidence.py check \
 
 `policy_signal_tokens=0` 表示没有策略梯度信号，但开启 KL loss 时仍可能存在 KL 梯度，因此不能解释为“完全没有任何梯度”。Reward 函数返回的 `reward_components` 会按原始结构保留，并在 UI 中展示各分量是否具有组内区分度。
 
+v5补丁还会在每个训练Step的Actor Update之后向VERL标准输出打印一行`[RL_DIAG_SUMMARY]` JSON。即使机器无法开放Dashboard端口，也可以直接从终端或ModelArts日志中查看算法、Reward分布、有效/同质Group、全对/全错Group、Advantage正负零分布、Response Mask Token和Policy Signal Token：
+
+```bash
+grep '\[RL_DIAG_SUMMARY\]' train.log | tail -20
+```
+
+该汇总只读取本Step已经生成的训练张量，不改变Reward、Advantage、Loss或反向传播，也不引入新依赖。若汇总失败，只打印`[RL_DIAG_SUMMARY_ERROR]`，不会中断训练。
+
 ## NGRPO 运行时补丁
 
 对于 `openpangu-72b-2512-postrain:v1`，推荐直接应用基于该镜像原始 VERL 文件生成的完整补丁：
