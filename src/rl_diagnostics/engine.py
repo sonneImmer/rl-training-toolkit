@@ -160,7 +160,12 @@ def run_diagnostics(
                 "rollout_count", "usable_count", "unique_reward_count",
                 "reward_range", "reward_std", "informative_pair_ratio",
                 "positive_reward_ratio", "reward_outcome_type", "low_information",
-                "correctness_ratio", "correctness_type", "diagnostic_reason"
+                "correctness_ratio", "correctness_type", "diagnostic_reason",
+                "group_id_quality", "advantage_estimator", "advantage_recorded_count",
+                "positive_advantage_count", "negative_advantage_count", "zero_advantage_count",
+                "nonzero_advantage_ratio", "zero_advantage_ratio",
+                "homogeneous_reward_nonzero_advantage", "homogeneous_reward_zero_advantage",
+                "all_wrong_negative_advantage"
             ])
             writer.writeheader()
             for gs in group_signals:
