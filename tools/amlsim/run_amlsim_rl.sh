@@ -6,6 +6,7 @@ set -Eeuo pipefail
 : "${RUN_ROOT:=/mnt/runs/amlsim-rl-$(date +%Y%m%d)}"
 : "${TOTAL_STEPS:=5}"
 : "${SAVE_FREQ:=$TOTAL_STEPS}"
+: "${DATALOADER_NUM_WORKERS:=0}"
 : "${ASCEND_RT_VISIBLE_DEVICES:=0,1,2,3,4,5,6,7}"
 : "${IMAGE_NAME:=openpangu-72b-2512-postrain:v1-zkx-pangu-mathfix}"
 : "${CODE_REVISION:=unknown}"
@@ -43,7 +44,7 @@ TENSOR_PARALLEL_SIZE=4
 if [[ "$DEVICE_COUNT" -lt 4 ]]; then
   TENSOR_PARALLEL_SIZE="$DEVICE_COUNT"
 fi
-export DEVICE_COUNT TENSOR_PARALLEL_SIZE MODEL_PATH DATA_DIR TOTAL_STEPS SAVE_FREQ IMAGE_NAME CODE_REVISION RANDOM_SEED ALGORITHM_PROFILE ADV_ESTIMATOR REWARD_FILE REWARD_RULE_ID REWARD_MIN REWARD_MAX NGRPO_MAX_REWARD
+export DEVICE_COUNT TENSOR_PARALLEL_SIZE MODEL_PATH DATA_DIR TOTAL_STEPS SAVE_FREQ DATALOADER_NUM_WORKERS IMAGE_NAME CODE_REVISION RANDOM_SEED ALGORITHM_PROFILE ADV_ESTIMATOR REWARD_FILE REWARD_RULE_ID REWARD_MIN REWARD_MAX NGRPO_MAX_REWARD
 
 python3 "$TOOLS_DIR/preflight_amlsim.py" \
   --data "$DATA_DIR" --model "$MODEL_PATH" \
@@ -65,6 +66,7 @@ manifest = {
         "advantage_estimator": os.environ.get("ADV_ESTIMATOR", "grpo"),
         "seed": int(os.environ.get("RANDOM_SEED", "42")),
         "total_steps": int(os.environ.get("TOTAL_STEPS", "5")),
+        "dataloader_num_workers": int(os.environ.get("DATALOADER_NUM_WORKERS", "0")),
     },
     "resources": {"npu_count": int(os.environ["DEVICE_COUNT"]), "visible_devices": os.environ.get("ASCEND_RT_VISIBLE_DEVICES", "").split(",")},
     "environment": {"image": os.environ.get("IMAGE_NAME", "unknown"), "image_id": "d2a7a76de939-derived", "patch_revision": "rollout-evidence-v4", "code_revision": os.environ.get("CODE_REVISION", "unknown")},
@@ -97,7 +99,7 @@ fi
 python3 -m verl.trainer.main_ppo \
   "${ALGORITHM_ARGS[@]}" \
   "${CRITIC_ARGS[@]}" \
-  data.train_files="$DATA_DIR/train.parquet" data.val_files="$DATA_DIR/test.parquet" \
+  data.train_files="$DATA_DIR/train.parquet" data.val_files="$DATA_DIR/test.parquet" data.dataloader_num_workers="$DATALOADER_NUM_WORKERS" \
   data.train_batch_size=16 data.val_batch_size=16 data.max_prompt_length=2048 data.max_response_length=160 \
   data.filter_overlong_prompts=True data.truncation=error data.shuffle=True data.seed="$RANDOM_SEED" \
   custom_reward_function.path="$TOOLS_DIR/$REWARD_FILE" custom_reward_function.name=compute_score \

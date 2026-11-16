@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0.0",
+  "evaluation_id": "step150-independent-test",
+  "checkpoint_step": 150,
+  "split": "test",
+  "dataset": "amlsim_typology_rules_v1_20261021/rl/test.parquet",
+  "source_model": "checkpoints/global_step_150/actor/merged_huggingface",
+  "dataset_sha256": "1acb3214fb3d912b8cfac64ddacac0a27ec51ee73fd45d9b0937f9f5c9cc6b1d",
+  "created_at": "2026-11-15T06:02:26.733509+00:00",
+  "source_metrics": "<run-root>/amlsim-ppo.xnryW53k/evaluations/step150-independent-test/metrics.json"
+}

@@ -19,6 +19,12 @@
 - `REPRODUCTION.md`：其他 agent 从代码到结果的复现步骤与验收条件。
 - `results/`：小型标准化结果、运行清单、Rollout 汇总和 PPT 图表。
 
+## 最新三算法对比（2026-11-12）
+
+GRPO、NGRPO、PPO 均完成 150 step，并在同一 800 条独立测试集上完成评测。当前结果为 PPO 100.00%、NGRPO 99.875%、GRPO 99.75% 的风险准确率；由于差距只有 0--2 条样本，结论仅适用于本数据集、单 seed 和本 checkpoint。完整汇总见 `results/algorithm_comparison_20261112/`。
+
+ERR99999 的定位与修复验证见 `results/algorithm_comparison_20261112/ERR99999_FIX.md`。
+
 ## 证据级别
 
 - `已直接测量`：来自 800 条独立测试集、训练日志或保存的 Rollout。

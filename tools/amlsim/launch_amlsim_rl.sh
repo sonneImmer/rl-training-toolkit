@@ -33,7 +33,7 @@ exec docker run -d \
   -v /usr/local/Ascend/driver:/usr/local/Ascend/driver:ro -v /etc/ascend_install.info:/etc/ascend_install.info:ro \
   -v "$MODEL_HOST:/mnt/model:ro" -v "$DATA_HOST:/mnt/data:ro" \
   -v "$RUNS_HOST:/mnt/runs" -v "$TOOLS_HOST:/mnt/tools:ro" -v "$PATCH_HOST:/mnt/patch_tools:ro" \
-  -e ASCEND_RT_VISIBLE_DEVICES="$VISIBLE_DEVICES" -e TOTAL_STEPS="${TOTAL_STEPS:-5}" -e SAVE_FREQ="${SAVE_FREQ:-${TOTAL_STEPS:-5}}" \
+  -e ASCEND_RT_VISIBLE_DEVICES="$VISIBLE_DEVICES" -e DATALOADER_NUM_WORKERS="${DATALOADER_NUM_WORKERS:-0}" -e TOTAL_STEPS="${TOTAL_STEPS:-5}" -e SAVE_FREQ="${SAVE_FREQ:-${TOTAL_STEPS:-5}}" \
   -e HCCL_WHITELIST_DISABLE=1 -e HCCL_SOCKET_IFNAME="$HCCL_INTERFACE" -e HCCL_CONNECT_TIMEOUT=600 \
   -e MODEL_PATH=/mnt/model -e DATA_DIR=/mnt/data -e RUN_ROOT=/mnt/runs/amlsim-rl-$(date +%Y%m%d) \
   -e IMAGE_NAME="$IMAGE" -e CODE_REVISION="$CODE_REVISION" -e RANDOM_SEED="${RANDOM_SEED:-42}" -e ALGORITHM_PROFILE="$ALGORITHM_PROFILE" -e ADV_ESTIMATOR="$ADV_ESTIMATOR" \

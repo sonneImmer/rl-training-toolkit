@@ -17,6 +17,7 @@ def main() -> int:
     parser.add_argument("--checkpoint-step", type=int)
     parser.add_argument("--split", default="test")
     parser.add_argument("--dataset")
+    parser.add_argument("--dataset-sha256")
     parser.add_argument("--source-model")
     args = parser.parse_args()
     if not (args.run_dir / "train.log").is_file():
@@ -29,11 +30,14 @@ def main() -> int:
         parser.error("metrics JSON must contain an object")
     destination = args.run_dir / "evaluations" / args.evaluation_id
     destination.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(args.metrics, destination / "metrics.json")
+    target_metrics = destination / "metrics.json"
+    if args.metrics.resolve() != target_metrics.resolve():
+        shutil.copy2(args.metrics, target_metrics)
     manifest = {
         "schema_version": "1.0.0", "evaluation_id": args.evaluation_id,
         "checkpoint_step": args.checkpoint_step, "split": args.split,
         "dataset": args.dataset, "source_model": args.source_model,
+        "dataset_sha256": args.dataset_sha256,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "source_metrics": str(args.metrics.resolve()),
     }
