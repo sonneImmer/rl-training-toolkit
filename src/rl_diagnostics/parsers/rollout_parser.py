@@ -159,6 +159,7 @@ def _parse_single_record(
     source_file: str,
     source_line: int,
     record_idx: int = 0,
+    group_id_quality: str = "unknown",
 ) -> RolloutRecord:
     """Parse a single JSONL record into a RolloutRecord."""
     # Extract fields
@@ -232,6 +233,7 @@ def _parse_single_record(
         rollout_id=rollout_idx,
         prompt_id=prompt_id,
         id_type=id_type,
+        group_id_quality=group_id_quality,
         prompt=prompt,
         response=response,
         training_reward=reward,
@@ -331,13 +333,17 @@ def parse_rollout_dir(
                 })
                 continue
             
-            # Determine group_id
-            group_id = record.get("uid", record.get("group_id", ""))
+            # Preserve how the Group identity was recovered. A generated
+            # placeholder must never be treated as a reliable group key.
+            raw_group_id = record.get("uid", record.get("group_id", ""))
+            group_id_quality = "explicit" if raw_group_id not in (None, "") else "unknown"
+            group_id = raw_group_id
             if not group_id:
                 # Try to infer from prompt text (only within same file)
                 prompt_text = _extract_str_field(record, ["input", "prompt"])
                 if prompt_text:
                     group_id = content_fingerprint(prompt_text)
+                    group_id_quality = "inferred_prompt"
                 else:
                     group_id = f"unknown_step{step}_line{line_idx}"
             
@@ -361,6 +367,7 @@ def parse_rollout_dir(
                 group_id=str(group_id),
                 source_file=filepath,
                 source_line=line_idx,
+                group_id_quality=group_id_quality,
             )
             
             # Handle array-form records (single record with multiple responses)
@@ -388,6 +395,7 @@ def parse_rollout_dir(
                             source_file=filepath,
                             source_line=line_idx,
                             record_idx=arr_idx,
+                            group_id_quality=group_id_quality,
                         )
                         arr_rollout.response = str(responses[arr_idx]) if arr_idx < len(responses) else None
                         arr_rollout.prediction = _extract_str_field(record, ["pred", "prediction"], arr_idx)
@@ -420,6 +428,7 @@ def parse_rollout_dir(
             
             # Get shared fields from first rollout
             first = rollouts[0] if rollouts else None
+            group_id_quality = first.group_id_quality if first else "unknown"
             group = GroupRecord(
                 schema_version=SCHEMA_VERSION,
                 experiment_id=experiment_id,
@@ -442,7 +451,8 @@ def parse_rollout_dir(
                 responses=responses,
                 rollout_ids=rollout_ids,
                 source_file=filepath,
-                group_status="resolved",
+                group_status="group_unresolved" if group_id_quality == "unknown" else "resolved",
+                group_id_quality=group_id_quality,
             )
             all_groups.append(group)
     

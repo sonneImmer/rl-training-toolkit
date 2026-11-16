@@ -1,0 +1,16 @@
+{"input":"all correct","output":"a1","score":4.0,"acc":true,"uid":"all-correct","advantage":0.0,"adv_estimator":"grpo"}
+{"input":"all correct","output":"a2","score":4.0,"acc":true,"uid":"all-correct","advantage":0.0,"adv_estimator":"grpo"}
+{"input":"all correct","output":"a3","score":4.0,"acc":true,"uid":"all-correct","advantage":0.0,"adv_estimator":"grpo"}
+{"input":"all correct","output":"a4","score":4.0,"acc":true,"uid":"all-correct","advantage":0.0,"adv_estimator":"grpo"}
+{"input":"all wrong","output":"b1","score":-4.0,"acc":false,"uid":"all-wrong","advantage":-1.0,"adv_estimator":"ngrpo"}
+{"input":"all wrong","output":"b2","score":-4.0,"acc":false,"uid":"all-wrong","advantage":-1.0,"adv_estimator":"ngrpo"}
+{"input":"all wrong","output":"b3","score":-4.0,"acc":false,"uid":"all-wrong","advantage":-1.0,"adv_estimator":"ngrpo"}
+{"input":"all wrong","output":"b4","score":-4.0,"acc":false,"uid":"all-wrong","advantage":-1.0,"adv_estimator":"ngrpo"}
+{"input":"mixed","output":"c1","score":1.0,"acc":true,"uid":"mixed","advantage":0.5,"adv_estimator":"grpo"}
+{"input":"mixed","output":"c2","score":-1.0,"acc":false,"uid":"mixed","advantage":-0.5,"adv_estimator":"grpo"}
+{"input":"mixed","output":"c3","score":1.0,"acc":true,"uid":"mixed","advantage":0.5,"adv_estimator":"grpo"}
+{"input":"mixed","output":"c4","score":-1.0,"acc":false,"uid":"mixed","advantage":-0.5,"adv_estimator":"grpo"}
+{"input":"verifier unknown","output":"d1","score":0.0,"uid":"verifier-failure","verifier_status":"verifier_error"}
+{"input":"verifier unknown","output":"d2","score":0.0,"uid":"verifier-failure","verifier_status":"verifier_error"}
+{"output":"missing prompt 1","score":4.0}
+{"output":"missing prompt 2","score":-4.0}

@@ -8,6 +8,8 @@ import statistics
 from collections import Counter, defaultdict
 from pathlib import Path
 
+from .schemas.data_models import content_fingerprint
+
 
 ANSI = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
 METRIC = re.compile(r"([A-Za-z0-9_./-]+):([-+0-9.eE]+)")
@@ -60,16 +62,31 @@ def build_snapshot(
         records = rollout_steps.get(step, [])
         correctness_groups = defaultdict(list)
         reward_groups = defaultdict(list)
-        for record in records:
+        group_quality = {}
+        for record_index, record in enumerate(records):
             correctness = record.get("acc")
-            group_id = str(record.get("uid", record.get("group_id", "")))
-            if isinstance(correctness, bool):
+            raw_group_id = record.get("uid", record.get("group_id", ""))
+            if raw_group_id not in (None, ""):
+                group_id = str(raw_group_id)
+                quality = "explicit"
+            else:
+                prompt = record.get("input", record.get("prompt"))
+                if prompt:
+                    group_id = content_fingerprint(str(prompt))
+                    quality = "inferred_prompt"
+                else:
+                    group_id = f"unknown_step{step}_record{record_index}"
+                    quality = "unknown"
+            group_quality[group_id] = quality
+            if isinstance(correctness, bool) and quality != "unknown":
                 correctness_groups[group_id].append(correctness)
             score = record.get("score", record.get("reward"))
-            if isinstance(score, (int, float)) and not isinstance(score, bool):
+            if isinstance(score, (int, float)) and not isinstance(score, bool) and quality != "unknown":
                 reward_groups[group_id].append(float(score) > 0)
         correctness_types = Counter()
         for correctness_values in correctness_groups.values():
+            if len(correctness_values) < 2:
+                continue
             ratio = sum(correctness_values) / len(correctness_values)
             if correctness_values and all(correctness_values):
                 correctness_types["all_correct"] += 1
@@ -83,6 +100,8 @@ def build_snapshot(
                 correctness_types["mixed"] += 1
         reward_types = Counter()
         for outcomes in reward_groups.values():
+            if len(outcomes) < 2:
+                continue
             ratio = sum(outcomes) / len(outcomes)
             if ratio == 1.0:
                 reward_types["all_positive"] += 1
@@ -112,7 +131,8 @@ def build_snapshot(
             "rollouts": len(records),
             "valid_ratio": valid / len(records) if records else None,
             "positive_ratio": positive / len(records) if records else None,
-            "has_correctness": bool(correctness_groups),
+            "has_correctness": any(len(values) >= 2 for values in correctness_groups.values()),
+            "group_id_quality": dict(Counter(group_quality.values())),
             "all_correct_groups": correctness_types["all_correct"],
             "all_wrong_groups": correctness_types["all_wrong"],
             "mostly_correct_groups": correctness_types["mostly_correct"],

@@ -93,6 +93,7 @@ class RolloutRecord:
     rollout_id: int
     prompt_id: Optional[str] = None
     id_type: str = "unknown"  # unknown | original | content_fingerprint
+    group_id_quality: str = "unknown"  # explicit | inferred_prompt | unknown
     prompt: Optional[str] = None
     response: Optional[str] = None
     training_reward: Optional[float] = None
@@ -148,6 +149,7 @@ class GroupRecord:
     rollout_ids: list[int] = field(default_factory=list)
     source_file: str = ""
     group_status: str = "resolved"  # resolved | group_unresolved
+    group_id_quality: str = "unknown"  # explicit | inferred_prompt | unknown
 
     def to_dict(self) -> dict[str, Any]:
         return _to_jsonable(asdict(self))

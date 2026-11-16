@@ -45,8 +45,13 @@ function advantageDirection(value) {
 function groupRollouts(records) {
   const groups = new Map();
   records.forEach((record, index) => {
-    const groupId = String(record.uid ?? record.group_id ?? record.input ?? record.prompt ?? `unknown-${index}`);
-    const group = groups.get(groupId) || { groupId, records: [] };
+    const explicitId = record.uid ?? record.group_id;
+    const prompt = record.input ?? record.prompt;
+    const groupId = String(explicitId ?? (prompt ? prompt : `unknown-${index}`));
+    const groupQuality = explicitId !== undefined && explicitId !== null && explicitId !== ""
+      ? "explicit"
+      : (prompt ? "inferred_prompt" : "unknown");
+    const group = groups.get(groupId) || { groupId, groupQuality, records: [] };
     group.records.push(record);
     groups.set(groupId, group);
   });
@@ -64,7 +69,7 @@ function rolloutGroupsHtml(records) {
     const zero = advantages.length - positive - negative;
     const signal = advantages.length ? `正 ${positive} · 负 ${negative} · 零 ${zero}` : "Advantage 未记录";
     return `<details class="rollout-group" data-ui-key="group:${escapeHtml(group.groupId)}">
-      <summary><strong>Group #${groupIndex + 1}</strong><span>${group.records.length} responses</span><span>${signal}</span></summary>
+      <summary><strong>Group #${groupIndex + 1}</strong><span>${group.records.length} responses</span><span>组身份 ${escapeHtml(group.groupQuality === "explicit" ? "显式 UID" : group.groupQuality === "inferred_prompt" ? "Prompt 推断" : "未知")}</span><span>${signal}</span></summary>
       <div class="rollout-group-body">${groupComponentHtml(group.records)}${group.records.map((record, index) => `<details class="rollout-item" data-ui-key="response:${escapeHtml(group.groupId)}:${escapeHtml(record.rollout_id ?? index)}">
         <summary><strong>#${index + 1}</strong><span>reward ${escapeHtml(record.score ?? record.reward ?? "-")}</span><span>adv ${escapeHtml(record.advantage ?? "-")}</span><span>${escapeHtml(advantageDirection(record.advantage))}</span><span>${escapeHtml(selectionText(record))}</span><span>acc ${escapeHtml(record.acc ?? "-")}</span><span>pred ${escapeHtml(record.pred ?? "-")}</span></summary>
         ${responseComponentsHtml(record)}

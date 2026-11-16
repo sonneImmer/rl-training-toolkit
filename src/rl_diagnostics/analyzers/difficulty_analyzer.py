@@ -165,6 +165,12 @@ def assign_difficulty(
             rollout_ids=group.rollout_ids,
             source_file=group.source_file,
             group_status=group.group_status,
+            group_id_quality=group.group_id_quality,
+            advantages=group.advantages,
+            advantage_estimator=group.advantage_estimator,
+            selected_for_update=group.selected_for_update,
+            update_candidate=group.update_candidate,
+            actor_update_executed=group.actor_update_executed,
         )
         updated_groups.append(updated)
 

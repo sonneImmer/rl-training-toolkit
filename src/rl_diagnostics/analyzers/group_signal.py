@@ -20,6 +20,7 @@ class GroupSignalResult:
     step: int
     group_id: str
     signal_type: str  # constant_score | near_constant_score | effective_group | insufficient_group | group_unresolved
+    group_id_quality: str = "unknown"  # explicit | inferred_prompt | unknown
     reason: str = ""
     rollout_count: int = 0
     usable_count: int = 0
@@ -178,6 +179,7 @@ def diagnose_group_signal(
     if group.group_status == "group_unresolved":
         return GroupSignalResult(
             experiment_id=exp_id, step=step, group_id=gid,
+            group_id_quality=getattr(group, "group_id_quality", "unknown"),
             signal_type="group_unresolved",
             reason="Group structure could not be recovered",
             rollout_count=group.rollout_count,
@@ -191,6 +193,7 @@ def diagnose_group_signal(
     if usable_count < config.min_usable_rollouts:
         return GroupSignalResult(
             experiment_id=exp_id, step=step, group_id=gid,
+            group_id_quality=getattr(group, "group_id_quality", "unknown"),
             signal_type="insufficient_group",
             reason=f"Only {usable_count} usable rollouts (min={config.min_usable_rollouts})",
             rollout_count=group.rollout_count,
@@ -252,7 +255,9 @@ def diagnose_group_signal(
     correctness_ratio = None
     if correctness_labels is not None:
         valid_labels = [l for l in correctness_labels if l is not None]
-        if len(valid_labels) == len(correctness_labels) and len(valid_labels) > 0:
+        if group.rollout_count < 2:
+            correctness_type = "unknown"
+        elif len(valid_labels) == len(correctness_labels) and len(valid_labels) >= 2:
             correctness_ratio = sum(valid_labels) / len(valid_labels)
             correctness_type = _classify_ratio(
                 correctness_ratio, config.extreme_ratio_threshold,
@@ -282,6 +287,7 @@ def diagnose_group_signal(
 
     return GroupSignalResult(
         experiment_id=exp_id, step=step, group_id=gid,
+        group_id_quality=getattr(group, "group_id_quality", "unknown"),
         signal_type=signal_type,
         reason=reason,
         rollout_count=group.rollout_count,
