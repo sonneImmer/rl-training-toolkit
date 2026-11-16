@@ -23,6 +23,7 @@ PROGRAM_RE = re.compile(r"(?im)^\s*Program\s*:\s*(.+?)\s*$")
 ANSWER_RE = re.compile(r"(?im)^\s*Answer\s*:\s*(.+?)\s*$")
 EVIDENCE_RE = re.compile(r"(?im)^\s*Evidence\s*:\s*(.*?)\s*$")
 END_RE = re.compile(r"(?im)^\s*End\s*:\s*(.*?)\s*$")
+THINK_BLOCK_RE = re.compile(r"^\s*<think>.*?</think>\s*", re.IGNORECASE | re.DOTALL)
 CALL_RE = re.compile(r"([a-z_]+)\s*\(([^()]*)\)", re.IGNORECASE)
 
 
@@ -65,7 +66,7 @@ def parse_number(value: Any) -> float:
 
 
 def parse_output(text: str) -> dict[str, Any]:
-    value = str(text or "")
+    value = THINK_BLOCK_RE.sub("", str(text or ""), count=1)
     lines = [line.strip() for line in value.splitlines() if line.strip()]
     answer_match = ANSWER_RE.search(value)
     program_match = PROGRAM_RE.search(value)

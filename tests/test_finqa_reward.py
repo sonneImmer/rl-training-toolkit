@@ -72,6 +72,11 @@ def test_reward_uses_evidence_only_as_a_small_bonus():
     assert result["evidence_recall"] == 0.0
 
 
+def test_reward_ignores_qwen_think_wrapper_before_protocol():
+    result = reward("<think>\ninternal reasoning\n</think>\n" + output("20", "subtract(120, 100)"))
+    assert result["format_valid"] is True
+    assert result["score"] == 4.0
+
 def test_reward_rejects_truncated_or_runaway_output():
     truncated = reward("Answer: 20\nProgram: subtract(120, 100)\nEvidence: table_1")
     runaway = reward(output("20", "subtract(120, 100)") + "\nAnswer: 99")
