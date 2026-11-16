@@ -297,6 +297,7 @@ Task ID / 目标：
 |---|---|---|---|---|
 | 2026-11-16 | PLAN-001 | DONE_VERIFIED（文档） | 本文件首次提交；无新基准训练 | M0 核实已有修复与测试后选择 M1 |
 | 2026-11-16 | M0-002 | DONE_VERIFIED | Group 身份质量与缺 UID 语义修复；新增 4 个 stdlib 黄金回归；`python3 -m py_compile` 通过；未执行新训练 | M0-003：浏览器轮询/折叠回归与 AMLSim/FinQA 来源清单核验 |
+| 2026-11-16 | M0-003 | DONE_VERIFIED | FinQA executable-v2 已存在：train/dev/test=6251/883/1147，官方源校验 8281 条通过；8 卡 Qwen3-8B GRPO/NGRPO 1-step smoke 成功。发现并修复 Qwen3 `<think>` 包裹导致格式 Reward 固定 -3.5；修复后 GRPO reward -3/-2、有效 Group 0/8，NGRPO reward -3/-2/1、有效 Group 1/8，工具识别到 Advantage 差异。离线 HTML/SVG 报告已生成；未执行长训练 | M1：统一 Verifier/Reward/Group 事实契约，并在长训练前先完成 FinQA 独立评测接入 |
 
 > 第 10 节的完成只表示**计划文档已提交**；M0–M6 并未因此实现。更新时保留历史行和实验失败记录。
 
