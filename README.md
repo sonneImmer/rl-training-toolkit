@@ -13,6 +13,9 @@ AMLSim 反洗钱案例入口：`docs/amlsim/README.md`。
 
 ## 当前状态与功能分析
 
+- [Agent 长期工作入口（AGENTS.md）](AGENTS.md)
+- [跨金融/数学/代码任务的 RL 基准实施与接续计划](docs/BENCHMARK_RL_AGENT_EXECUTION_PLAN.md)
+
 - [2026-11-12开发进展、功能、实验与缺陷总览](docs/CURRENT_STATUS_20261112.md)
 - [本轮验证记录](docs/SYNC_VALIDATION_20261112.md)
 - [RL-Insight集成与性能案例](docs/rl_insight/README.md)
